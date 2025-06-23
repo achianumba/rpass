@@ -1,0 +1,25 @@
+[package]
+name = "rpass"
+version = "0.1.0"
+authors = ["Arinze Chianumba"]
+edition = "2024"
+description = "A password manager for the CLI"
+readme = "README.md"
+homepage = "https://achianumba.github.io/rpass"
+repository = "https://github.com/achianumba/rpass"
+license-file = "LICENSE"
+keywords = [
+  "rpass",
+  "pass",
+  "password",
+  "password-manager"
+]
+categories = [ "command-line-utilities" ]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+clap = { version = "4.5.40", features = ["derive"] }
+eyre = "0.6.12"
+rpassword = "7.4.0"
