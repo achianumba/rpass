@@ -1,0 +1,41 @@
+name = "achianumba/rpass"
+
+[readme]
+partials = [
+  "intro.md",
+  "installation.md",
+  "todo.md"
+]
+
+[devcontainer]
+overwrite = true
+image = "rust"
+tag = "latest"
+service = "rpass"
+
+post_create_command = """
+cargo doc --no-deps
+cargo install miniserve
+"""
+
+post_start_command = """
+miniserve --pretty-urls --index repo/index.html target/doc
+"""
+
+[devcontainer.ports]
+docs = 8080
+
+[devcontainer.user]
+sudo = true
+
+[devcontainer.customizations.vscode]
+extensions = [
+  "rust-lang.rust-analyzer",
+  "yzhang.markdown-all-in-one",
+  "samuelcolvin.jinjahtml"
+]
+
+[devcontainer.customizations.vscode.settings]
+"telemetry.telemetryLevel" = "off"
+"telemetry.feedback.enabled" = false
+"workbench.sideBar.location" = "right"
