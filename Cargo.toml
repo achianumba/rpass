@@ -3,7 +3,7 @@ name = "rpass"
 version = "0.1.0"
 authors = ["Arinze Chianumba"]
 edition = "2024"
-description = "A password manager for the CLI"
+description = "A (symmetric/asymmetric) GPG-based secrets manager for the CLI"
 readme = "README.md"
 homepage = "https://achianumba.github.io/rpass"
 repository = "https://github.com/achianumba/rpass"
@@ -11,8 +11,9 @@ license-file = "LICENSE"
 keywords = [
   "rpass",
   "pass",
+  "secrets",
   "password",
-  "password-manager"
+  "secrets-manager"
 ]
 categories = [ "command-line-utilities" ]
 
@@ -20,6 +21,10 @@ categories = [ "command-line-utilities" ]
 unsafe_code = "forbid"
 
 [dependencies]
-clap = { version = "4.5.40", features = ["derive"] }
+clap = { version = "4.5.40", features = ["derive", "env"] }
 eyre = "0.6.12"
+gpgme = "0.11.0"
 rpassword = "7.4.0"
+serde = { version = "1.0.219", features = ["derive"] }
+toml = "0.8.23"
+uuid = { version = "1.17.0", features = ["v4"] }
