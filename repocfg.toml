@@ -14,11 +14,14 @@ tag = "latest"
 service = "rpass"
 
 post_create_command = """
+sudo apt-get install libgpgme11-dev
+rustup component add rustfmt-x86_64-unknown-linux-gnu
 cargo doc --no-deps
 cargo install miniserve
 """
 
 post_start_command = """
+cargo doc
 miniserve --pretty-urls --index repo/index.html target/doc
 """
 

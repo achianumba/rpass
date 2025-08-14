@@ -9,3 +9,4 @@
 
 - Asymmetrically encrypted secrets
 - Symmetrically encrypted secrets
+- Secret name/path anonymization

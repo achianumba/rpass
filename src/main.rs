@@ -26,9 +26,9 @@
 //! **Install from source**
 //!
 //! ```
-//! $ git clone https://github.com/achianumba/rpass.git
-//! $ cd rpass
-//! $ cargo build --release
+//! git clone https://github.com/achianumba/rpass.git
+//! cd rpass
+//! cargo build --release
 //! ```
 //!
 //! **Install from Crates.io**

@@ -5,5 +5,7 @@
 
 [ -n $(command -v git) ] && [ -n $(command -v code) ] && git config --global core.editor 'code --wait'
 
+sudo apt-get install libgpgme11-dev
+rustup component add rustfmt-x86_64-unknown-linux-gnu
 cargo doc --no-deps
 cargo install miniserve
