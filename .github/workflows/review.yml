@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt -y libgpgme11
+          sudo apt -y libgpgme-dev
 
       - name: Test
         run: cargo test
