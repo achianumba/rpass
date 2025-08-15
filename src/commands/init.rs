@@ -16,9 +16,10 @@ pub struct Init {
 impl Init {
     /// Create a new folder at `path_string` and saves `store.toml` to the created folder.
     pub fn run(&self, path_string: &String) -> Result<()> {
-        Store::init(self.key.to_owned(), PathBuf::from(path_string))?.save_index()?;
+        let store = Store::init(self.key.to_owned(), PathBuf::from(path_string))?;
 
-        println!("\n\x1b[1;32mrpass\x1b[0m initialized a new store at '{path_string}'\n");
+        store.save_index()?;
+        store.log(format!("initialized a new store at '{path_string}'"));
 
         Ok(())
     }

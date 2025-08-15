@@ -1,16 +1,18 @@
 //! CLI commands.
+use clap::Parser;
 use clap::Subcommand;
-use eyre::Result;
 #[cfg(not(debug_assertions))]
 use eyre::WrapErr;
+use eyre::{Context, Result};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
-use std::path::MAIN_SEPARATOR_STR;
+use std::path::{absolute, MAIN_SEPARATOR_STR};
 
 pub mod init;
+pub mod insert;
 
-use clap::Parser;
 use init::Init;
+use insert::Insert;
 
 /// A secrets manager for the CLI
 #[derive(Debug, Parser)]
@@ -55,12 +57,22 @@ the 'DEFAULT_RPASS_STORE' environment variable."#,
 #[derive(Debug, Subcommand)]
 pub enum Commands {
     Init(Init),
+    Insert(Insert),
 }
 
 impl Cli {
-    pub fn run(&self) -> Result<()> {
+    pub fn run(&mut self) -> Result<()> {
+        self.store = absolute(&self.store)
+            .wrap_err(format!(
+                "Failed to parse absolute path to secrets store at '{}'",
+                &self.store
+            ))?
+            .display()
+            .to_string();
+
         match &self.command {
             Commands::Init(init) => init.run(&self.store)?,
+            Commands::Insert(insert) => insert.run(&self.store)?,
         };
 
         Ok(())

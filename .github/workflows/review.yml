@@ -1,0 +1,26 @@
+name: Review
+
+on:
+  pull_request:
+    branches: ['trunk']
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt -y libgpgme-dev
+
+      - name: Test
+        run: cargo test
+
+      - name: Build
+        run: cargo build --release
