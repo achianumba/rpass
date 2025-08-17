@@ -3,8 +3,8 @@ use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::fs::{create_dir_all, read_to_string, write};
+use std::fmt::{Display, format};
+use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use toml::{from_str, to_string};
@@ -121,7 +121,7 @@ impl Store {
         let mut _plaintext = match to_string(entry) {
             std::result::Result::Ok(t) => t,
             Err(_) => {
-                bail!(format!("Failed to store serialized entry for '{}'", name));
+                bail!(format!("Failed to serialize entry for '{}'", name));
             }
         };
 
@@ -258,7 +258,7 @@ impl Store {
     }
 
     /// Builds and returns an entry's ID from the entry's path
-    pub fn get_entry_id(&mut self, name: &String) -> Result<PathBuf> {
+    pub fn set_entry_path(&mut self, name: &String) -> Result<PathBuf> {
         let entry_paths = name.split('/').collect::<Vec<&str>>();
         let mut file = self.path.to_owned();
         let mut store_paths = self.index.paths.to_owned();
@@ -277,5 +277,108 @@ impl Store {
         self.index.paths = store_paths;
 
         Ok(file)
+    }
+
+    /// Construct an entry's actual path from the virtual name
+    pub fn get_path(&self, name: &String) -> Result<PathBuf> {
+        let paths = name.split('/').collect::<Vec<&str>>();
+        let mut path = self.path.to_owned();
+
+        for pathname in paths {
+            match self.index.paths.get(pathname) {
+                None => {
+                    bail!("The store does not contain an entry named '{}'", name);
+                }
+                Some(p) => {
+                    path.push(p);
+                }
+            };
+        }
+
+        if !path.is_dir() {
+            path.set_extension("gpg");
+        }
+
+        Ok(path)
+    }
+
+    pub fn print_tree(
+        &self,
+        directory: &mut PathBuf,
+        paths: &HashMap<String, String>,
+        prefix: &String,
+    ) -> Result<()> {
+        let mut entries: Vec<PathBuf> = read_dir(&directory)
+            .wrap_err(format!(
+                "Failed to read actual actual path at '{}'",
+                directory.display()
+            ))?
+            .map(|entry| entry.unwrap().path())
+            .filter(|entry| !entry.ends_with("store.toml"))
+            .collect();
+
+        let mut index = paths.len();
+
+        for entry in &mut entries {
+            index -= 1;
+
+            let mut name = if entry.is_file() {
+                entry.file_stem().unwrap().display().to_string()
+            } else {
+                entry.file_name().unwrap().display().to_string()
+            };
+
+            if index == 0 {
+                println!("{}└── {}", prefix, paths.get(&name).unwrap());
+
+                if entry.is_dir() {
+                    self.print_tree(
+                        &mut directory.join(&name),
+                        paths,
+                        &format!("{}    ", prefix),
+                    )?;
+                }
+            } else {
+                println!("{}├── {}", prefix, paths.get(&name).unwrap());
+
+                if entry.is_dir() {
+                    self.print_tree(
+                        &mut directory.join(&name),
+                        paths,
+                        &format!("{}│   ", prefix),
+                    )?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn decrypt(&self, file: &PathBuf, name: &String) -> Result<HashMap<String, String>> {
+        let mut cipher = File::open(&file).wrap_err(format!(
+            "Failed to read secret for '{}' (actual: '{}'",
+            &name,
+            &file.display()
+        ))?;
+
+        let mut plaintext_bytes: Vec<u8> = Vec::new();
+
+        let mut ctx = Context::from_protocol(Protocol::OpenPgp).wrap_err(format!(
+            "Failed to create encryption context for '{}.",
+            name
+        ))?;
+
+        ctx.decrypt(&mut cipher, &mut plaintext_bytes)
+            .wrap_err(format!("Failed to decrypt entry for '{}'", name))?;
+
+        let plaintext = String::from_utf8(plaintext_bytes).wrap_err(format!(
+            "Failed to convert cipher to text content for '{}'",
+            name
+        ))?;
+
+        let saved_secret: HashMap<String, String> =
+            from_str(&plaintext).wrap_err(format!("Failed to deserialize entry in '{}'", name))?;
+
+        Ok(saved_secret)
     }
 }

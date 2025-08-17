@@ -25,7 +25,7 @@ pub struct Insert {
 impl Insert {
     pub fn run(&self, path_string: &String) -> Result<()> {
         let mut store = Store::load(path_string)?;
-        let mut entry_file = store.get_entry_id(&self.name)?;
+        let mut entry_file = store.set_entry_path(&self.name)?;
 
         if entry_file.is_dir() {
             bail!(

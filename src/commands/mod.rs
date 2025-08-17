@@ -6,13 +6,15 @@ use eyre::WrapErr;
 use eyre::{Context, Result};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
-use std::path::{absolute, MAIN_SEPARATOR_STR};
+use std::path::{MAIN_SEPARATOR_STR, absolute};
 
 pub mod init;
 pub mod insert;
+pub mod list;
 
 use init::Init;
 use insert::Insert;
+use list::List;
 
 /// A secrets manager for the CLI
 #[derive(Debug, Parser)]
@@ -31,7 +33,7 @@ pub struct Cli {
     store: String,
 }
 
-fn get_default_store() -> String {
+pub fn get_default_store() -> String {
     #[cfg(not(debug_assertions))]
     let default_store = home_dir()
         .expect(
@@ -58,6 +60,7 @@ the 'DEFAULT_RPASS_STORE' environment variable."#,
 pub enum Commands {
     Init(Init),
     Insert(Insert),
+    List(List),
 }
 
 impl Cli {
@@ -73,6 +76,7 @@ impl Cli {
         match &self.command {
             Commands::Init(init) => init.run(&self.store)?,
             Commands::Insert(insert) => insert.run(&self.store)?,
+            Commands::List(list) => list.run(&self.store)?,
         };
 
         Ok(())

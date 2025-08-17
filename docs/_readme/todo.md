@@ -17,7 +17,11 @@
   - [x] Encrypt secret.
   - [x] Echo user input.
   - [x] Suppress secret user input.
-- [ ] List stored secrets (`list`).
+- [x] List stored secrets (`list`).
+  - [x] List the fields in a secret.
+  - [x] List secrets in a given path.
+  - [x] List secrets in the entire store.
+  - [ ] Fix t
 - [ ] Search for strings in secrets (`grep`).
 - [ ] Search for secrets whose paths (`id`) match a given string (`find` | `search`).
 - [ ] Decrypt and print a secret (`show`).
