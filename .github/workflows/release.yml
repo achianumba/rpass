@@ -31,6 +31,10 @@ jobs:
       # The action I'm using here is a popular choice.
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install gpgme dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgpgme11-dev
       - name: Run release-plz
         uses: release-plz/action@v0.5
         with:
