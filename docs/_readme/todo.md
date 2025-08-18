@@ -1,4 +1,6 @@
-<!-- markdownlint-disable first-line-h1 -->
+<!-- markdownlint-disable first-line-h1 no-inline-html -->
+<details>
+<summary>TODO</summary>
 
 ## TODO
 
@@ -36,3 +38,5 @@
 - [ ] Duplicate a secret (`copy` | `cp`).
 - [ ] Implement revision control integration (`git` & `jj`).
 - [ ] Implement server/client interface.
+
+</details>

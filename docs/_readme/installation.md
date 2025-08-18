@@ -1,13 +1,11 @@
-<!-- markdownlint-disable first-line-h1 -->
+<!-- markdownlint-disable first-line-h1 no-emphasis-as-heading-->
 
 ## Installation
 
-<!-- markdownlint-disable-next-line no-trailing-spaces no-emphasis-as-heading -->
 **Requirements**
 
 `rpass` depends on the [`gpgme`](https://crates.io/crates/gpgme) crate for
-all interactions with a host's GPG keyring. So, it you need to first install
-the following dependencies.
+all interactions with a host's GPG keyring. So, it requires the following OS-specific dependencies:
 
 - **Debian/Ubuntu based systems:** `libgpgme11-dev` (`sudo apt-get -y install libgpgme11-dev`)
 - **RHEL/Fedora based systems:** `gpgme-devel`
@@ -23,10 +21,11 @@ the following dependencies.
 git clone https://github.com/achianumba/rpass.git
 cd rpass
 cargo build --release
+sudo mv target/release/rpass /usr/local/bin
 ```
 
 ### Install from Crates.io
 
 ```shell
-cargo binstall rpass
+cargo install rpass
 ```
