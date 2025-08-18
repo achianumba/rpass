@@ -13,16 +13,17 @@
 
 
 <!-- markdownlint-disable first-line-h1 -->
+
 ## Installation
 
-<!-- markdownlint-disable-next-line no-trailing-spaces -->
-**Requirements** 
+<!-- markdownlint-disable-next-line no-trailing-spaces no-emphasis-as-heading -->
+**Requirements**
 
 `rpass` depends on the [`gpgme`](https://crates.io/crates/gpgme) crate for
 all interactions with a host's GPG keyring. So, it you need to first install
 the following dependencies.
 
-- **Debian/Ubuntu based systems:** `libgpgme11-dev`
+- **Debian/Ubuntu based systems:** `libgpgme11-dev` (`sudo apt-get install -y libgpgme11-dev`)
 - **RHEL/Fedora based systems:** `gpgme-devel`
 - **NixOS:** TODO!
 - **Alpine:** TODO!
@@ -68,12 +69,18 @@ cargo binstall rpass
   - [x] List the fields in a secret.
   - [x] List secrets in a given path.
   - [x] List secrets in the entire store.
+  - [ ] Fix store/entry tree display.
+- [x] Decrypt and print a secret (`show`).
+  - [x] Display the value of a single secret
+  - [x] Display multiple secrets as JSON
+  - [x] Optionally copy displayed secrets to the clipboard.
+  - [x] Allow user defined clipboard wait time.
 - [ ] Search for strings in secrets (`grep`).
 - [ ] Search for secrets whose paths (`id`) match a given string (`find` | `search`).
-- [ ] Decrypt and print a secret (`show`).
 - [ ] Update a secret's fields (`edit` | `update`).
 - [ ] Generate a new secret (`generate`).
 - [ ] Remove a secret (`remove` | `rm`).
 - [ ] Rename/Move a secret (`rename` | `move`).
 - [ ] Duplicate a secret (`copy` | `cp`).
 - [ ] Implement revision control integration (`git` & `jj`).
+- [ ] Implement server/client interface.

@@ -1,10 +1,10 @@
 //! Secrets store.
-use eyre::{Result, WrapErr, bail};
+use eyre::{bail, Result, WrapErr};
 use gpgme::{Context, Protocol};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
+use std::fs::{create_dir_all, read_dir, read_to_string, write, File};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use toml::{from_str, to_string};
