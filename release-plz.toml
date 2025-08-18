@@ -1,0 +1,11 @@
+[workspace]
+allow_dirty = true # allow updating repositories with uncommitted changes
+changelog_update = false
+dependencies_update = false # update dependencies with `cargo update`
+git_release_enable = true
+pr_branch_prefix = "feat-pr-" # Release PR branch prefix
+publish_allow_dirty = true
+publish_no_verify = false
+repo_url = "https://github.com/<owner>/<repo>"
+semver_check = false
+pr_labels = ["release"] # add the `release` label to the release Pull Request
