@@ -22,12 +22,17 @@
   - [x] List secrets in a given path.
   - [x] List secrets in the entire store.
   - [ ] Fix store/entry tree display.
+- [x] Decrypt and print a secret (`show`).
+  - [x] Display the value of a single secret
+  - [x] Display multiple secrets as JSON
+  - [x] Optionally copy displayed secrets to the clipboard.
+  - [x] Allow user defined clipboard wait time.
 - [ ] Search for strings in secrets (`grep`).
 - [ ] Search for secrets whose paths (`id`) match a given string (`find` | `search`).
-- [ ] Decrypt and print a secret (`show`).
 - [ ] Update a secret's fields (`edit` | `update`).
 - [ ] Generate a new secret (`generate`).
 - [ ] Remove a secret (`remove` | `rm`).
 - [ ] Rename/Move a secret (`rename` | `move`).
 - [ ] Duplicate a secret (`copy` | `cp`).
 - [ ] Implement revision control integration (`git` & `jj`).
+- [ ] Implement server/client interface.

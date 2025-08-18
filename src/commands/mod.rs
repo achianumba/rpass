@@ -4,9 +4,9 @@ use clap::Subcommand;
 use eyre::{Result, WrapErr};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
+use std::path::absolute;
 #[cfg(debug_assertions)]
 use std::path::MAIN_SEPARATOR_STR;
-use std::path::absolute;
 
 pub mod init;
 pub mod insert;
