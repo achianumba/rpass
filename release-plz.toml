@@ -6,6 +6,6 @@ git_release_enable = true
 pr_branch_prefix = "feat-pr-" # Release PR branch prefix
 publish_allow_dirty = true
 publish_no_verify = false
-repo_url = "https://github.com/<owner>/<repo>"
+repo_url = "https://github.com/achianumba/rpass"
 semver_check = false
 pr_labels = ["release"] # add the `release` label to the release Pull Request
