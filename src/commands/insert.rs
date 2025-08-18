@@ -44,11 +44,11 @@ impl Insert {
 
         if !self.custom_fields {
             entry.insert(
-                "Username".to_string(),
-                store.read_user_input("Username".to_string(), &true)?,
+                "username".to_string(),
+                store.read_user_input("username".to_string(), &true)?,
             );
 
-            let password = store.read_user_input("Password".to_string(), &self.echo)?;
+            let password = store.read_user_input("password".to_string(), &self.echo)?;
             let password_confirmation =
                 store.read_user_input("Confirm password".to_string(), &self.echo)?;
 

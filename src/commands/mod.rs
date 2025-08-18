@@ -1,20 +1,22 @@
 //! CLI commands.
 use clap::Parser;
 use clap::Subcommand;
-#[cfg(not(debug_assertions))]
-use eyre::WrapErr;
-use eyre::{Context, Result};
+use eyre::{Result, WrapErr};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
-use std::path::{MAIN_SEPARATOR_STR, absolute};
+#[cfg(debug_assertions)]
+use std::path::MAIN_SEPARATOR_STR;
+use std::path::absolute;
 
 pub mod init;
 pub mod insert;
 pub mod list;
+pub mod show;
 
 use init::Init;
 use insert::Insert;
 use list::List;
+use show::Show;
 
 /// A secrets manager for the CLI
 #[derive(Debug, Parser)]
@@ -61,6 +63,7 @@ pub enum Commands {
     Init(Init),
     Insert(Insert),
     List(List),
+    Show(Show),
 }
 
 impl Cli {
@@ -77,6 +80,7 @@ impl Cli {
             Commands::Init(init) => init.run(&self.store)?,
             Commands::Insert(insert) => insert.run(&self.store)?,
             Commands::List(list) => list.run(&self.store)?,
+            Commands::Show(show) => show.run(&self.store)?,
         };
 
         Ok(())

@@ -19,17 +19,17 @@ impl List {
     pub fn run(&self, path_string: &String) -> Result<()> {
         let store = Store::load(path_string)?;
         let mut name = String::new();
-        let mut root = PathBuf::new();
+        let mut _root = PathBuf::new();
 
         if let Some(n) = &self.name {
             name = n.to_owned();
-            root = store.get_path(n)?;
+            _root = store.get_path(n)?;
         } else {
-            root = store.path.to_owned();
+            _root = store.path.to_owned();
         }
 
-        if root.is_file() {
-            let fields = store.decrypt(&root, &name)?;
+        if _root.is_file() {
+            let fields = store.decrypt(&_root, &name)?;
             println!("'{}' contains the following fields\n", &name);
 
             for (field, _) in fields {
@@ -45,18 +45,18 @@ impl List {
             paths.insert(v, k);
         }
 
-        if root == store.path {
+        if _root == store.path {
             println!("rPass Store")
         } else {
             println!(
                 "{}",
                 paths
-                    .get(&root.file_name().unwrap().display().to_string())
+                    .get(&_root.file_name().unwrap().display().to_string())
                     .unwrap()
             );
         }
 
-        store.print_tree(&mut root, &paths, &"".to_string())?;
+        store.print_tree(&mut _root, &paths, &"".to_string())?;
 
         Ok(())
     }

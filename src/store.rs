@@ -3,7 +3,7 @@ use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fmt::{Display, format};
+use std::fmt::Display;
 use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -322,28 +322,28 @@ impl Store {
         for entry in &mut entries {
             index -= 1;
 
-            let mut name = if entry.is_file() {
+            let mut _name = if entry.is_file() {
                 entry.file_stem().unwrap().display().to_string()
             } else {
                 entry.file_name().unwrap().display().to_string()
             };
 
             if index == 0 {
-                println!("{}└── {}", prefix, paths.get(&name).unwrap());
+                println!("{}└── {}", prefix, paths.get(&_name).unwrap());
 
                 if entry.is_dir() {
                     self.print_tree(
-                        &mut directory.join(&name),
+                        &mut directory.join(&_name),
                         paths,
                         &format!("{}    ", prefix),
                     )?;
                 }
             } else {
-                println!("{}├── {}", prefix, paths.get(&name).unwrap());
+                println!("{}├── {}", prefix, paths.get(&_name).unwrap());
 
                 if entry.is_dir() {
                     self.print_tree(
-                        &mut directory.join(&name),
+                        &mut directory.join(&_name),
                         paths,
                         &format!("{}│   ", prefix),
                     )?;
