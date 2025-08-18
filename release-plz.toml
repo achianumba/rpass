@@ -9,3 +9,4 @@ publish_no_verify = false
 repo_url = "https://github.com/achianumba/rpass"
 semver_check = false
 pr_labels = ["release"] # add the `release` label to the release Pull Request
+release_commits = "^(feat|fix|refactor|perf):" # prepare release only if at least one commit matches a regex
