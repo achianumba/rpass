@@ -5,7 +5,7 @@ use arboard::Clipboard;
 #[cfg(target_os = "linux")]
 use arboard::SetExtLinux;
 use clap::Args;
-use eyre::{Result, bail};
+use eyre::{bail, Result};
 
 use crate::store::Store;
 
