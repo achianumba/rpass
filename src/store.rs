@@ -1,10 +1,10 @@
 //! Secrets store.
-use eyre::{bail, Result, WrapErr};
+use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::fs::{create_dir_all, read_dir, read_to_string, write, File};
+use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use toml::{from_str, to_string};
@@ -159,7 +159,7 @@ impl Store {
 
     /// Log information to stdout
     pub fn log<I: Display>(&self, info: I) {
-        println!("\n\x1b[1;32mrpass\x1b[0m {}\n", info);
+        println!("\n{} {}\n", self.colour_text("green", "rpass"), info);
     }
 
     /// Load the index of an existing store
@@ -233,6 +233,8 @@ impl Store {
 
     /// Read input from standard input
     pub fn read_user_input(&mut self, prompt: String, echo: &bool) -> Result<String> {
+        let prompt = format!("{} ", self.colour_text("purple", format!("{}:", prompt)));
+
         if *echo {
             return self.read_and_echo_user_input(prompt);
         }
@@ -244,7 +246,7 @@ impl Store {
     fn read_and_echo_user_input(&mut self, prompt: String) -> Result<String> {
         let mut input = String::new();
 
-        print!("\x1b[1;35m{prompt}:\x1b[0m ");
+        print!("{}", prompt);
         io::stdout().flush()?; // Make sure the above prompt is shown first.
 
         io::stdin().read_line(&mut input)?;
@@ -254,7 +256,7 @@ impl Store {
 
     /// Read user input without echoing keypresses.
     fn read_secret_user_input(&self, prompt: String) -> Result<String, std::io::Error> {
-        rpassword::prompt_password(format!("\x1b[1;35m{prompt}:\x1b[0m "))
+        rpassword::prompt_password(prompt)
     }
 
     /// Builds and returns an entry's ID from the entry's path
@@ -317,36 +319,44 @@ impl Store {
             .filter(|entry| !entry.ends_with("store.toml"))
             .collect();
 
-        let mut index = paths.len();
+        let mut index = entries.len();
 
         for entry in &mut entries {
             index -= 1;
 
-            let mut _name = if entry.is_file() {
+            let id = if entry.is_file() {
                 entry.file_stem().unwrap().display().to_string()
             } else {
                 entry.file_name().unwrap().display().to_string()
             };
 
-            if index == 0 {
-                println!("{}└── {}", prefix, paths.get(&_name).unwrap());
+            let name = &paths.get(&id).unwrap();
 
+            if index == 0 {
                 if entry.is_dir() {
+                    println!("{}└── {}", prefix, self.colour_text("blue", name));
+
                     self.print_tree(
-                        &mut directory.join(&_name),
-                        paths,
+                        &mut directory.join(&entry),
+                        &paths,
                         &format!("{}    ", prefix),
                     )?;
+                } else {
+                    println!("{}└── {}", prefix, name);
                 }
-            } else {
-                println!("{}├── {}", prefix, paths.get(&_name).unwrap());
+            }
 
+            if index != 0 {
                 if entry.is_dir() {
+                    println!("{}├── {}", prefix, self.colour_text("blue", name));
+
                     self.print_tree(
-                        &mut directory.join(&_name),
-                        paths,
+                        &mut directory.join(&entry),
+                        &paths,
                         &format!("{}│   ", prefix),
                     )?;
+                } else {
+                    println!("{}├── {}", prefix, name);
                 }
             }
         }
@@ -380,5 +390,17 @@ impl Store {
             from_str(&plaintext).wrap_err(format!("Failed to deserialize entry in '{}'", name))?;
 
         Ok(saved_secret)
+    }
+
+    pub fn colour_text<Text: Display>(&self, color: &str, text: Text) -> String {
+        let id: i8 = match color {
+            "red" => 31,
+            "green" => 32,
+            "blue" => 34,
+            "purple" => 35,
+            _ => 37, // Defaults to white,
+        };
+
+        format!("\x1b[1;{id}m{text}\x1b[0m")
     }
 }
