@@ -3,7 +3,7 @@ use eyre::{bail, Result};
 
 use crate::store::Store;
 
-/// Edit field names and values or
+/// Modify field names and values or
 /// add fields to a secret
 #[derive(Debug, Args)]
 #[command(alias = "update")]
