@@ -660,7 +660,6 @@ dependencies = [
  "eyre",
  "gpgme",
  "rpassword",
- "serde",
  "toml",
  "uuid",
 ]

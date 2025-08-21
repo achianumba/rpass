@@ -1,7 +1,6 @@
 //! Secrets store.
 use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
@@ -11,7 +10,7 @@ use toml::{from_str, to_string};
 use uuid::Uuid;
 
 /// Secrets store.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Store {
     /// The store's folder
     pub path: PathBuf,
@@ -23,7 +22,7 @@ pub struct Store {
     pub index: StoreIndex,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct StoreIndex {
     /// The store's GPG public key ID
     pub key: Option<String>,
