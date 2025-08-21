@@ -1,4 +1,4 @@
-use crate::store::Store;
+use crate::{blue, green, store::Store};
 use clap::Args;
 use eyre::Result;
 use std::path::PathBuf;
@@ -19,7 +19,12 @@ impl Init {
         let store = Store::init(self.key.to_owned(), PathBuf::from(path_string))?;
 
         store.save_index()?;
-        store.log(format!("initialized a new store at '{path_string}'"));
+        
+        println!(
+            "\n{} initialized a new store at {}\n",
+            green!("rpass"),
+            blue!("{}", path_string)
+        );
 
         Ok(())
     }

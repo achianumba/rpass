@@ -5,9 +5,9 @@ use arboard::Clipboard;
 #[cfg(target_os = "linux")]
 use arboard::SetExtLinux;
 use clap::Args;
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 
-use crate::store::Store;
+use crate::{red, store::Store};
 
 /// Display secrets values and optionally copy them to the clipboard.
 #[derive(Debug, Args)]
@@ -41,11 +41,11 @@ impl Show {
         let entry_path = store.get_path(&self.name)?;
 
         if !entry_path.is_file() {
-            bail!(
+            bail!(red!(
                 "'{}' is a folder. The store does not contain an entry named '{}'. ",
                 &self.name,
                 &self.name
-            );
+            ));
         }
 
         let entry = store.decrypt(&entry_path, &self.name)?;
@@ -64,14 +64,14 @@ impl Show {
             let field = &self.fields[0];
 
             if !entry.contains_key(field) {
-                bail!("'{}' doesn't contain '{}'", &self.name, field);
+                bail!(red!("'{}' doesn't contain '{}'", &self.name, field));
             }
 
             output.push_str(entry.get(field).unwrap());
         } else {
             for field in &self.fields {
                 if !entry.contains_key(field) {
-                    bail!("'{}' doesn't contain '{}'", &self.name, field);
+                    bail!(red!("'{}' doesn't contain '{}'", &self.name, field));
                 }
 
                 output.push_str(
@@ -88,7 +88,7 @@ impl Show {
 
         if self.clipboard {
             println!(
-                "Copied the following to the clipboard from '{}'\n'{}'",
+                "Copied the following to the clipboard from {}\n'{}'",
                 &self.name, output
             );
 

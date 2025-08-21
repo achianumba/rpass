@@ -1,13 +1,14 @@
 //! Secrets store.
-use eyre::{bail, Result, WrapErr};
+use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::fs::{create_dir_all, read_dir, read_to_string, remove_file, write, File};
+use std::fs::{File, create_dir_all, read_dir, read_to_string, remove_file, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use toml::{from_str, to_string};
 use uuid::Uuid;
+
+use crate::{blue, purple, red};
 
 /// Secrets store.
 #[derive(Debug)]
@@ -38,15 +39,15 @@ impl Store {
     /// Create a secrets store.
     pub fn init(key: Option<String>, path: PathBuf) -> Result<Self> {
         if !path.exists() {
-            create_dir_all(&path).wrap_err(format!(
-                "Failed to create password store folder '{}'",
+            create_dir_all(&path).wrap_err(red!(
+                "Failed to create password store at '{}'",
                 &path.display()
             ))?;
         } else {
-            bail!(
+            bail!(red!(
                 "Aborting password store initialization. '{}' already exists.",
                 &path.display()
-            );
+            ));
         };
 
         Ok(Self {
@@ -97,30 +98,28 @@ impl Store {
         }
 
         if &self.index.name != name {
-            create_dir_all(file.parent().unwrap()).wrap_err(format!(
+            create_dir_all(file.parent().unwrap()).wrap_err(red!(
                 "Failed to create entry directory for '{}' at '{}'",
                 name,
                 file.display()
             ))?;
         }
 
-        write(file, cipher).wrap_err(format!("Failed to save data to '{}'", name))?;
+        write(file, cipher).wrap_err(red!("Failed to save data to '{}'", name))?;
 
         Ok(())
     }
 
     /// Encrypt a secret.
     pub fn encrypt(&self, name: &String, entry: &HashMap<String, String>) -> Result<Vec<u8>> {
-        let mut ctx = Context::from_protocol(Protocol::OpenPgp).wrap_err(format!(
-            "Failed to create encryption context for '{}.",
-            name
-        ))?;
+        let mut ctx = Context::from_protocol(Protocol::OpenPgp)
+            .wrap_err(red!("Failed to create encryption context for '{}.", name))?;
 
         // Using match to hide potential secret info from output
         let mut _plaintext = match to_string(entry) {
             std::result::Result::Ok(t) => t,
             Err(_) => {
-                bail!(format!("Failed to serialize entry for '{}'", name));
+                bail!(red!("Failed to serialize entry for '{}'", name));
             }
         };
 
@@ -138,16 +137,17 @@ impl Store {
         if let Some(key) = &self.index.key {
             let public_key = ctx
                 .get_key(key)
-                .wrap_err(format!("Failed to retrieve '{}' from keystore.", key))?;
+                .wrap_err(red!("Failed to retrieve '{}' from keystore.", key))?;
 
             ctx.encrypt(Some(&public_key), _plaintext, &mut cipher)
-                .wrap_err(format!(
+                .wrap_err(red!(
                     "Failed to encrypt entry for {} using key with ID {}",
-                    name, key
+                    name,
+                    key
                 ))?;
         } else {
             ctx.encrypt(&vec![], _plaintext, &mut cipher)
-                .wrap_err(format!(
+                .wrap_err(red!(
                     "Failed to encrypt entry for {} using a symmetric key phrase.",
                     name
                 ))?;
@@ -156,19 +156,12 @@ impl Store {
         Ok(cipher)
     }
 
-    /// Log information to stdout
-    pub fn log<I: Display>(&self, info: I) {
-        println!("\n{} {}\n", self.colour_text("green", "rpass"), info);
-    }
-
     /// Load the index of an existing store
     pub fn load(path_string: &String) -> Result<Self> {
         let path = PathBuf::from(path_string);
         let file = path.join("store.toml");
-        let file_contents = read_to_string(&file).wrap_err(format!(
-            "Failed to read store index at '{}'.",
-            file.display()
-        ))?;
+        let file_contents = read_to_string(&file)
+            .wrap_err(red!("Failed to read store index at '{}'.", file.display()))?;
 
         let mut key: Option<String> = None;
         let mut _cipher: Vec<u8> = Vec::new();
@@ -176,45 +169,44 @@ impl Store {
         if file_contents.starts_with("-") {
             _cipher = file_contents.as_bytes().to_vec();
         } else {
-            let saved_index: HashMap<String, String> =
-                from_str(&file_contents).wrap_err(format!(
-                    "Failed to deserialize saved store index in '{}'",
-                    file.display()
-                ))?;
+            let saved_index: HashMap<String, String> = from_str(&file_contents).wrap_err(red!(
+                "Failed to deserialize saved store index in '{}'",
+                file.display()
+            ))?;
 
             if !saved_index.contains_key("key") {
-                bail!(
+                bail!(red!(
                     "'key' field missing from the store index at '{}'",
                     &file.display()
-                );
+                ));
             }
 
             key = Some(saved_index["key"].to_string());
 
             if !saved_index.contains_key("paths") {
-                bail!(
+                bail!(red!(
                     "'paths' field is missing from the store index at '{}'",
                     &file.display()
-                )
+                ));
             }
 
             _cipher = file_contents.as_bytes().to_vec();
         };
 
         let mut ctx = Context::from_protocol(Protocol::OpenPgp)
-            .wrap_err("Failed to create decryption context for store.")?;
+            .wrap_err(red!("Failed to create decryption context for store."))?;
         let mut plaintext_bytes: Vec<u8> = Vec::new();
 
         ctx.decrypt(&mut _cipher, &mut plaintext_bytes)
-            .wrap_err("Failed to decrypt store index cipher")?;
+            .wrap_err(red!("Failed to decrypt store index cipher"))?;
 
         let plaintext = String::from_utf8(plaintext_bytes)
-            .wrap_err("Failed to convert store index bytes to string.")?;
+            .wrap_err(red!("Failed to convert store index bytes to string."))?;
 
         let paths: HashMap<String, String> = match from_str(&plaintext) {
             std::result::Result::Ok(m) => m,
             Err(_) => {
-                bail!(format!(
+                bail!(red!(
                     "Failed to deserialize store index at '{}'",
                     &file.display()
                 ));
@@ -232,7 +224,7 @@ impl Store {
 
     /// Read input from standard input
     pub fn read_user_input(&mut self, prompt: String, echo: &bool) -> Result<String> {
-        let prompt = format!("{} ", self.colour_text("purple", format!("{}:", prompt)));
+        let prompt = purple!("{}: ", prompt);
 
         if *echo {
             return self.read_and_echo_user_input(prompt);
@@ -288,7 +280,7 @@ impl Store {
         for pathname in paths {
             match self.index.paths.get(pathname) {
                 None => {
-                    bail!("The store does not contain an entry named '{}'", name);
+                    bail!(red!("The store does not contain an entry named '{}'", name));
                 }
                 Some(p) => {
                     path.push(p);
@@ -310,7 +302,7 @@ impl Store {
         prefix: &String,
     ) -> Result<()> {
         let mut entries: Vec<PathBuf> = read_dir(&directory)
-            .wrap_err(format!(
+            .wrap_err(red!(
                 "Failed to read actual actual path at '{}'",
                 directory.display()
             ))?
@@ -333,7 +325,7 @@ impl Store {
 
             if index == 0 {
                 if entry.is_dir() {
-                    println!("{}└── {}", prefix, self.colour_text("blue", name));
+                    println!("{}└── {}", prefix, blue!("{}", name));
 
                     self.print_tree(
                         &mut directory.join(&entry),
@@ -347,7 +339,7 @@ impl Store {
 
             if index != 0 {
                 if entry.is_dir() {
-                    println!("{}├── {}", prefix, self.colour_text("blue", name));
+                    println!("{}├── {}", prefix, blue!("{}", name));
 
                     self.print_tree(
                         &mut directory.join(&entry),
@@ -364,7 +356,7 @@ impl Store {
     }
 
     pub fn decrypt(&self, file: &PathBuf, name: &String) -> Result<HashMap<String, String>> {
-        let mut cipher = File::open(&file).wrap_err(format!(
+        let mut cipher = File::open(&file).wrap_err(red!(
             "Failed to read secret for '{}' (actual: '{}'",
             &name,
             &file.display()
@@ -372,41 +364,25 @@ impl Store {
 
         let mut plaintext_bytes: Vec<u8> = Vec::new();
 
-        let mut ctx = Context::from_protocol(Protocol::OpenPgp).wrap_err(format!(
-            "Failed to create encryption context for '{}.",
-            name
-        ))?;
+        let mut ctx = Context::from_protocol(Protocol::OpenPgp)
+            .wrap_err(red!("Failed to create encryption context for '{}.", name))?;
 
         ctx.decrypt(&mut cipher, &mut plaintext_bytes)
-            .wrap_err(format!("Failed to decrypt entry for '{}'", name))?;
+            .wrap_err(red!("Failed to decrypt entry for '{}'", name))?;
 
-        let plaintext = String::from_utf8(plaintext_bytes).wrap_err(format!(
+        let plaintext = String::from_utf8(plaintext_bytes).wrap_err(red!(
             "Failed to convert cipher to text content for '{}'",
             name
         ))?;
 
         let saved_secret: HashMap<String, String> =
-            from_str(&plaintext).wrap_err(format!("Failed to deserialize entry in '{}'", name))?;
+            from_str(&plaintext).wrap_err(red!("Failed to deserialize entry in '{}'", name))?;
 
         Ok(saved_secret)
     }
 
-    pub fn colour_text<Text: Display>(&self, color: &str, text: Text) -> String {
-        let id: i8 = match color {
-            "red" => 31,
-            "green" => 32,
-            "blue" => 34,
-            "purple" => 35,
-            _ => 37, // Defaults to white,
-        };
-
-        format!("\x1b[1;{id}m{text}\x1b[0m")
-    }
-
     pub fn delete(&self, entry_file: PathBuf, name: &String) -> Result<()> {
-        remove_file(entry_file).wrap_err(
-            self.colour_text("red", format!("Failed to delete entry file for '{}'", name)),
-        )?;
+        remove_file(entry_file).wrap_err(red!("Failed to delete entry file for '{}'", name))?;
 
         Ok(())
     }

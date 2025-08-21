@@ -4,11 +4,12 @@ use clap::Subcommand;
 use eyre::{Result, WrapErr};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
-use std::path::absolute;
 #[cfg(debug_assertions)]
 use std::path::MAIN_SEPARATOR_STR;
+use std::path::absolute;
 
 pub mod edit;
+pub mod generate;
 pub mod init;
 pub mod insert;
 pub mod list;
@@ -16,11 +17,14 @@ pub mod remove;
 pub mod show;
 
 use edit::Edit;
+use generate::Generate;
 use init::Init;
 use insert::Insert;
 use list::List;
 use remove::Remove;
 use show::Show;
+
+use crate::red;
 
 /// A secrets manager for the CLI
 #[derive(Debug, Parser)]
@@ -70,12 +74,13 @@ pub enum Commands {
     Show(Show),
     Edit(Edit),
     Remove(Remove),
+    Generate(Generate),
 }
 
 impl Cli {
     pub fn run(&mut self) -> Result<()> {
         self.store = absolute(&self.store)
-            .wrap_err(format!(
+            .wrap_err(red!(
                 "Failed to parse absolute path to secrets store at '{}'",
                 &self.store
             ))?
@@ -89,6 +94,7 @@ impl Cli {
             Commands::Show(show) => show.run(&self.store)?,
             Commands::Edit(edit) => edit.run(&self.store)?,
             Commands::Remove(remove) => remove.run(&self.store)?,
+            Commands::Generate(generate) => generate.run(&self.store)?,
         };
 
         Ok(())
