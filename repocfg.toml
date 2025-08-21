@@ -4,6 +4,7 @@ name = "achianumba/rpass"
 partials = [
   "intro.md",
   "installation.md",
+  "usage.md",
   "todo.md"
 ]
 

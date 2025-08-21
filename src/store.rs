@@ -1,17 +1,16 @@
 //! Secrets store.
-use eyre::{Result, WrapErr, bail};
+use eyre::{bail, Result, WrapErr};
 use gpgme::{Context, Protocol};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
+use std::fs::{create_dir_all, read_dir, read_to_string, remove_file, write, File};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use toml::{from_str, to_string};
 use uuid::Uuid;
 
 /// Secrets store.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct Store {
     /// The store's folder
     pub path: PathBuf,
@@ -23,7 +22,7 @@ pub struct Store {
     pub index: StoreIndex,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct StoreIndex {
     /// The store's GPG public key ID
     pub key: Option<String>,
@@ -402,5 +401,13 @@ impl Store {
         };
 
         format!("\x1b[1;{id}m{text}\x1b[0m")
+    }
+
+    pub fn delete(&self, entry_file: PathBuf, name: &String) -> Result<()> {
+        remove_file(entry_file).wrap_err(
+            self.colour_text("red", format!("Failed to delete entry file for '{}'", name)),
+        )?;
+
+        Ok(())
     }
 }
