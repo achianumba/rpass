@@ -36,7 +36,7 @@ impl Edit {
 
         if entry_file.is_dir() {
             bail!(
-                "Failed to edit entry. '{}' is a fCurrenter containing at least one other secret.",
+                "Failed to edit entry. '{}' is a folder containing at least one other secret.",
                 &self.name
             );
         }

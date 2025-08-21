@@ -12,12 +12,14 @@ pub mod edit;
 pub mod init;
 pub mod insert;
 pub mod list;
+pub mod remove;
 pub mod show;
 
 use edit::Edit;
 use init::Init;
 use insert::Insert;
 use list::List;
+use remove::Remove;
 use show::Show;
 
 /// A secrets manager for the CLI
@@ -67,6 +69,7 @@ pub enum Commands {
     List(List),
     Show(Show),
     Edit(Edit),
+    Remove(Remove),
 }
 
 impl Cli {
@@ -85,6 +88,7 @@ impl Cli {
             Commands::List(list) => list.run(&self.store)?,
             Commands::Show(show) => show.run(&self.store)?,
             Commands::Edit(edit) => edit.run(&self.store)?,
+            Commands::Remove(remove) => remove.run(&self.store)?,
         };
 
         Ok(())
