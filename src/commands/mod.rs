@@ -8,11 +8,13 @@ use std::path::absolute;
 #[cfg(debug_assertions)]
 use std::path::MAIN_SEPARATOR_STR;
 
+pub mod edit;
 pub mod init;
 pub mod insert;
 pub mod list;
 pub mod show;
 
+use edit::Edit;
 use init::Init;
 use insert::Insert;
 use list::List;
@@ -64,6 +66,7 @@ pub enum Commands {
     Insert(Insert),
     List(List),
     Show(Show),
+    Edit(Edit),
 }
 
 impl Cli {
@@ -81,6 +84,7 @@ impl Cli {
             Commands::Insert(insert) => insert.run(&self.store)?,
             Commands::List(list) => list.run(&self.store)?,
             Commands::Show(show) => show.run(&self.store)?,
+            Commands::Edit(edit) => edit.run(&self.store)?,
         };
 
         Ok(())
