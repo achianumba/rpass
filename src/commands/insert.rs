@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use clap::Args;
 use eyre::{Result, bail};
 
-use crate::{green, purple, red, store::Store, yellow};
+use crate::{green, purple, red, store::Store, utils::git, yellow};
 
 /// Add a new secret to the store
 #[derive(Debug, Args)]
@@ -83,6 +83,11 @@ impl Insert {
 
         store.save(entry_file, &self.name, &entry)?;
         store.save_index()?;
+
+        if store.is_repo() {
+            git(path_string, ["add", "."])?;
+            git(path_string, ["commit", "-m", "'insert secret'"])?;
+        }
 
         println!(
             "Inserted '{}' into the secrets store.",

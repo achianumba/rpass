@@ -42,7 +42,7 @@ impl Show {
 
         if !entry_path.is_file() {
             bail!(red!(
-                "'{}' is a folder. The store does not contain an entry named '{}'. ",
+                "'{}' is a group. The store does not contain an entry named '{}'. ",
                 &self.name,
                 &self.name
             ));

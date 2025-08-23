@@ -1,6 +1,6 @@
 [workspace]
 allow_dirty = true # allow updating repositories with uncommitted changes
-changelog_update = false
+changelog_update = true
 dependencies_update = false # update dependencies with `cargo update`
 git_release_enable = true
 pr_branch_prefix = "feat-pr-" # Release PR branch prefix
