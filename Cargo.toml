@@ -25,6 +25,7 @@ arboard = "3.6.0"
 clap = { version = "4.5.40", features = ["derive", "env"] }
 eyre = "0.6.12"
 gpgme = "0.11.0"
+rand = "0.9.2"
 rpassword = "7.4.0"
 toml = "0.8.23"
 uuid = { version = "1.17.0", features = ["v4"] }

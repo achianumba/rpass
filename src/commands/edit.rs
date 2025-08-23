@@ -1,7 +1,7 @@
 use clap::Args;
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 
-use crate::store::Store;
+use crate::{blue, purple, red, store::Store};
 
 /// Modify field names and values or
 /// add fields to a secret
@@ -35,10 +35,10 @@ impl Edit {
         let entry_file = store.get_path(&self.name)?;
 
         if entry_file.is_dir() {
-            bail!(
+            bail!(red!(
                 "Failed to edit entry. '{}' is a folder containing at least one other secret.",
                 &self.name
-            );
+            ));
         }
 
         let mut entry = store.decrypt(&entry_file, &self.name)?;
@@ -61,7 +61,11 @@ impl Edit {
                     entry.insert(new_field, value.to_owned());
                 }
                 None => {
-                    bail!("'{}' doesn't contain a field named '{}'", &self.name, field);
+                    bail!(
+                        "'{}' doesn't contain a field named '{}'",
+                        blue!("{}", &self.name),
+                        purple!("{}", field)
+                    );
                 }
             };
         }
@@ -79,7 +83,11 @@ impl Edit {
                     entry.insert(field.to_owned(), new_value);
                 }
                 None => {
-                    bail!("'{}' doesn't contain a field named '{}'", &self.name, field);
+                    bail!(
+                        "'{}' doesn't contain a field named '{}'",
+                        blue!("{}", &self.name),
+                        purple!("{}", field)
+                    );
                 }
             };
         }

@@ -1,7 +1,7 @@
 use clap::Args;
 use eyre::{bail, Result};
 
-use crate::store::Store;
+use crate::{red, store::Store};
 
 /// Delete a secret from the store
 #[derive(Debug, Args)]
@@ -19,8 +19,8 @@ impl Remove {
 
         if entry_file.is_dir() {
             bail!(
-                "Failed to edit entry. '{}' is a folder containing at least one other secret.",
-                &self.name
+                red!("Failed to edit entry. '{}' is a folder containing at least one other secret.",
+                &self.name)
             );
         }
 

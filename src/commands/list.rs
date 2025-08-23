@@ -5,6 +5,7 @@ use clap::Args;
 use eyre::Result;
 
 use crate::store::Store;
+use crate::{blue, purple};
 
 /// List secrets saved in a path or list the fields saved in an entry.
 #[derive(Debug, Args)]
@@ -30,10 +31,10 @@ impl List {
 
         if _root.is_file() {
             let fields = store.decrypt(&_root, &name)?;
-            println!("'{}' contains the following fields\n", &name);
+            println!("\n{} contains the following fields\n", blue!("{}", &name));
 
             for (field, _) in fields {
-                println!("- {}", field);
+                println!("- {}", purple!("{}", field));
             }
 
             return Ok(());
@@ -48,12 +49,11 @@ impl List {
         if _root == store.path {
             println!("rPass Store")
         } else {
-            println!(
-                "{}",
-                paths
-                    .get(&_root.file_name().unwrap().display().to_string())
-                    .unwrap()
-            );
+            let root_name = paths
+                .get(&_root.file_name().unwrap().display().to_string())
+                .unwrap();
+
+            println!("{}", blue!("{}", root_name));
         }
 
         store.print_tree(&mut _root, &paths, &"".to_string())?;

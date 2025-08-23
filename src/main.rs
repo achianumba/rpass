@@ -41,6 +41,7 @@ use eyre::Result;
 
 mod commands;
 mod store;
+mod utils;
 
 use crate::commands::Cli;
 

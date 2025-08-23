@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use clap::Args;
-use eyre::{bail, Result};
+use eyre::{Result, bail};
 
-use crate::store::Store;
+use crate::{green, purple, red, store::Store, yellow};
 
 /// Add a new secret to the store
 #[derive(Debug, Args)]
@@ -28,16 +28,19 @@ impl Insert {
         let mut entry_file = store.set_entry_path(&self.name)?;
 
         if entry_file.is_dir() {
-            bail!(
+            bail!(red!(
                 "Failed to save entry. '{}' is a folder containing at least one other secret.",
                 &self.name
-            );
+            ));
         }
 
         entry_file.set_extension("gpg");
 
         if entry_file.exists() {
-            bail!("The store already contains a secret named '{}'", self.name);
+            bail!(red!(
+                "The store already contains a secret named '{}'",
+                self.name
+            ));
         }
 
         let mut entry: HashMap<String, String> = HashMap::new();
@@ -53,14 +56,16 @@ impl Insert {
                 store.read_user_input("Confirm password".to_string(), &self.echo)?;
 
             if password != password_confirmation {
-                bail!("Passwords do not match");
+                bail!(red!("Passwords do not match"));
             }
 
             entry.insert("password".to_string(), password);
         } else {
             loop {
-                store.log(
-                    "Enter \x1b[1;33mDONE!\x1b[0m as the \x1b[0;33mfield\x1b[0m name to exit custom fields loop",
+                println!(
+                    "Enter {} as the {} when you're done setting custom fields.",
+                    yellow!("DONE!"),
+                    yellow!("field name")
                 );
 
                 let field = store.read_user_input("Field name".to_string(), &true)?;
@@ -71,14 +76,18 @@ impl Insert {
 
                 entry.insert(
                     field.to_owned(),
-                    store.read_user_input(format!("{} value", field), &self.echo)?,
+                    store.read_user_input(purple!("{} value", field), &self.echo)?,
                 );
             }
         }
 
         store.save(entry_file, &self.name, &entry)?;
         store.save_index()?;
-        store.log(format!("inserted '{}' into the secrets store.", self.name));
+
+        println!(
+            "Inserted '{}' into the secrets store.",
+            green!("{}", self.name)
+        );
 
         Ok(())
     }
