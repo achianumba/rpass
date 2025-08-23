@@ -1,7 +1,7 @@
 use clap::Args;
 use eyre::{Result, bail};
 
-use crate::{blue, purple, red, store::Store};
+use crate::{blue, purple, red, store::Store, utils::git};
 
 /// Modify field names and values or
 /// add fields to a secret
@@ -56,7 +56,7 @@ impl Edit {
                         println!("Current name: {}", &field);
                     }
 
-                    let new_field = store.read_user_input(format!("New {field}"), &self.echo)?;
+                    let new_field = store.read_user_input(format!("New {field} label"), &self.echo)?;
 
                     entry.insert(new_field, value.to_owned());
                 }
@@ -93,6 +93,11 @@ impl Edit {
         }
 
         store.save(entry_file, &self.name, &entry)?;
+
+        if store.is_repo() {
+            git(path_string, ["add", "."])?;
+            git(path_string, ["commit", "-m", "'edit entry'"])?;
+        }
 
         Ok(())
     }

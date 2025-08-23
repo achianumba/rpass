@@ -10,3 +10,7 @@ The following commands have been implemented:
 - `show`: Display secrets values and optionally copy them to the clipboard
 - `edit`: Modify field names and values or add fields to a secret
 - `remove`: Delete a secret from the store
+- `generate`: Generate and optionally insert a secret's password or passphrase
+- `git`: Execute git commands against the store
+- `copy`: Create a copy of a secret
+- `move`: Move or rename of a secret or group of secrets

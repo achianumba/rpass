@@ -7,7 +7,7 @@ use rand::{
     seq::{IndexedRandom, IteratorRandom},
 };
 
-use crate::{red, store::Store, yellow};
+use crate::{red, store::Store, utils::git, yellow};
 
 const SPECIAL_CHARACTERS: &str = r#"'!'#$%&'()*+-./{|}~':;<=>?@[\]^_`"#;
 const NUMERIC_CHARACTERS: &str = "0123456789";
@@ -7869,6 +7869,11 @@ impl Generate {
 
             store.save(entry_file, name, &entry)?;
             store.save_index()?;
+
+            if store.is_repo() {
+                git(path_string, ["add", "."])?;
+                git(path_string, ["commit", "-m", "'generate entry'"])?;
+            }
         }
 
         Ok(())

@@ -2,7 +2,7 @@
 use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
 use std::collections::HashMap;
-use std::fs::{File, create_dir_all, read_dir, read_to_string, remove_file, write};
+use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use toml::{from_str, to_string};
@@ -38,16 +38,16 @@ pub struct StoreIndex {
 impl Store {
     /// Create a secrets store.
     pub fn init(key: Option<String>, path: PathBuf) -> Result<Self> {
-        if !path.exists() {
-            create_dir_all(&path).wrap_err(red!(
-                "Failed to create password store at '{}'",
-                &path.display()
-            ))?;
-        } else {
+        if path.exists() {
             bail!(red!(
                 "Aborting password store initialization. '{}' already exists.",
                 &path.display()
             ));
+        } else {
+            create_dir_all(&path).wrap_err(red!(
+                "Failed to create password store at '{}'",
+                &path.display()
+            ))?;
         };
 
         Ok(Self {
@@ -234,7 +234,7 @@ impl Store {
     }
 
     /// Read input from standard input and echo each keypress as it's entered.
-    fn read_and_echo_user_input(&mut self, prompt: String) -> Result<String> {
+    pub fn read_and_echo_user_input(&mut self, prompt: String) -> Result<String> {
         let mut input = String::new();
 
         print!("{}", prompt);
@@ -307,7 +307,7 @@ impl Store {
                 directory.display()
             ))?
             .map(|entry| entry.unwrap().path())
-            .filter(|entry| !entry.ends_with("store.toml"))
+            .filter(|entry| !entry.ends_with("store.toml") && !entry.ends_with(".git"))
             .collect();
 
         let mut index = entries.len();
@@ -381,9 +381,7 @@ impl Store {
         Ok(saved_secret)
     }
 
-    pub fn delete(&self, entry_file: PathBuf, name: &String) -> Result<()> {
-        remove_file(entry_file).wrap_err(red!("Failed to delete entry file for '{}'", name))?;
-
-        Ok(())
+    pub fn is_repo(&self) -> bool {
+        self.path.join(".git").is_dir()
     }
 }

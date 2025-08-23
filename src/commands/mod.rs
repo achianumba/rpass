@@ -4,27 +4,32 @@ use clap::Subcommand;
 use eyre::{Result, WrapErr};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
+use std::path::absolute;
 #[cfg(debug_assertions)]
 use std::path::MAIN_SEPARATOR_STR;
-use std::path::absolute;
 
+pub mod _copy;
+pub mod _move;
 pub mod edit;
 pub mod generate;
+pub mod git;
 pub mod init;
 pub mod insert;
 pub mod list;
 pub mod remove;
 pub mod show;
 
+use crate::red;
+use _copy::Copy;
+use _move::Move;
 use edit::Edit;
 use generate::Generate;
+use git::Git;
 use init::Init;
 use insert::Insert;
 use list::List;
 use remove::Remove;
 use show::Show;
-
-use crate::red;
 
 /// A secrets manager for the CLI
 #[derive(Debug, Parser)]
@@ -39,7 +44,7 @@ pub struct Cli {
     command: Commands,
 
     /// Path to the secrets store.
-    #[arg(global = true, default_value_t = get_default_store(), env = "DEFAULT_RPASS_STORE")]
+    #[arg(global = true, default_value_t = get_default_store(), env = "DEFAULT_RPASS_STORE", last = true)]
     store: String,
 }
 
@@ -75,6 +80,9 @@ pub enum Commands {
     Edit(Edit),
     Remove(Remove),
     Generate(Generate),
+    Git(Git),
+    Copy(Copy),
+    Move(Move),
 }
 
 impl Cli {
@@ -95,6 +103,9 @@ impl Cli {
             Commands::Edit(edit) => edit.run(&self.store)?,
             Commands::Remove(remove) => remove.run(&self.store)?,
             Commands::Generate(generate) => generate.run(&self.store)?,
+            Commands::Git(git) => git.run(&self.store)?,
+            Commands::Copy(_copy) => _copy.run(&self.store)?,
+            Commands::Move(_move) => _move.run(&self.store)?,
         };
 
         Ok(())

@@ -1,10 +1,14 @@
 # rpass
 
+![Crates.io Total Downloads](https://img.shields.io/crates/d/rpass)
+![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/rpass/latest)
+![Crates.io Size](https://img.shields.io/crates/size/rpass)
+
 `rpass` is a [`pass`](https://www.passwordstore.org/) inspired secrets manager.
 
 > [!WARNING]
 > ⚠️ THIS PROJECT IS AN ACTIVE WORK-IN-PROGRESS.
-> CORE COMMANDS ARE IMPLEMENTED AND USABLE, BUT THIS PROJECT IS STILL EVOLVING. 
+> CORE COMMANDS ARE IMPLEMENTED AND USABLE, BUT THIS PROJECT IS STILL EVOLVING.
 > ⚠️ SUBSEQUENT RELEASES MAY INCLUDE BREAKING CHANGES.
 
 ## Features
@@ -12,6 +16,7 @@
 - Asymmetrically/symmetrically encrypted secrets
 - Secret name/path anonymization
 - Clipboard support
+
 
 <!-- markdownlint-disable first-line-h1 no-emphasis-as-heading-->
 
@@ -58,6 +63,10 @@ The following commands have been implemented:
 - `show`: Display secrets values and optionally copy them to the clipboard
 - `edit`: Modify field names and values or add fields to a secret
 - `remove`: Delete a secret from the store
+- `generate`: Generate and optionally insert a secret's password or passphrase
+- `git`: Execute git commands against the store
+- `copy`: Create a copy of a secret
+- `move`: Move or rename of a secret or group of secrets
 
 
 <!-- markdownlint-disable first-line-h1 no-inline-html -->
@@ -68,12 +77,8 @@ The following commands have been implemented:
 
 The following are on the roadmap but not yet implemented:
 
-- `generate`: Generate random passwords and passphrases
-- `move`: Move a secret or path to a new destination or rename the secret/path
-- `copy`: Duplicate a secret
 - `grep`: Search for strings in secrets
 - `find`: Search for strings in secret pathnames
-- `git`: Manage scecrets through revision control
 - `serve`: Serve secrets over a REST API.
 
 </details>
