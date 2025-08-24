@@ -1,19 +1,79 @@
-<!-- markdownlint-disable first-line-h1 no-emphasis-as-heading-->
+<!-- markdownlint-disable first-line-h1 no-emphasis-as-heading no-inline-html-->
 
 ## Installation
 
 **Requirements**
 
-`rpass` depends on the [`gpgme`](https://crates.io/crates/gpgme) crate for
-all interactions with a host's GPG keyring. So, it requires the following OS-specific dependencies:
+Building `rpass` from source (including **installing it from Crates.io**) on the underlisted platforms requires that you run the given command command(s) to install the crate's system dependencies.
 
-- **Debian/Ubuntu based systems:** `libgpgme11-dev` (`sudo apt-get -y install libgpgme11-dev`)
-- **RHEL/Fedora based systems:** `gpgme-devel`
-- **NixOS:** TODO!
-- **Alpine:** TODO!
-- **Arch:** TODO!
-- **macOS:** `gnupg`
-- **Windows:** [`Gpg4win`](https://www.gpg4win.org)
+<details>
+<summary><strong>Debian/Ubuntu based</strong></summary>
+
+```shell
+apt install -y pkg-config gcc libgpgme-dev
+```
+
+</details>
+
+<details>
+<summary><strong>RHEL/Fedora based</strong></summary>
+
+```shell
+dnf install -y gcc gpgme-devel
+```
+
+</details>
+
+<details>
+<summary><strong>NixOS (INCOMPLETE)</strong></summary>
+
+```shell
+nix-env -iA nixpkgs.gcc \
+  nixpkgs.pkg-config \
+  nixpkgs.gpgme.dev \
+  nixpkgs.libassuan.dev \
+  nixpkgs.libgpg-error.dev
+```
+
+```shell
+export EXPORT $HOME/.nix-profile/lib/pkgconfig/
+```
+
+</details>
+
+<details>
+<summary><strong>Alpine (INCOMPLETE)</strong></summary>
+
+```shell
+apk add musl-dev gcc libgpg-error-dev gpgme-dev
+```
+
+</details>
+
+<details>
+<summary><strong>Arch</strong></summary>
+
+```shell
+pacman -Syu gcc pkg-config gpgme
+```
+
+</details>
+
+<details>
+<summary><strong>macOS (NOT TESTED)</strong></summary>
+
+```shell
+brew install gnupg pinentry-mac
+```
+
+</details>
+
+<details>
+<summary><strong>Windows (NOT TESTED)</strong></summary>
+
+Download and install [`Gpg4win`](https://www.gpg4win.org)
+
+</details>
 
 ### Install from source
 

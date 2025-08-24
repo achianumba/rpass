@@ -5,7 +5,8 @@ partials = [
   "intro.md",
   "installation.md",
   "usage.md",
-  "todo.md"
+  "todo.md",
+  "license.md"
 ]
 
 [devcontainer]
