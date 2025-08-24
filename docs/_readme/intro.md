@@ -1,3 +1,4 @@
+<!-- markdownlint-disable no-inline-html -->
 # rpass
 
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/rpass)
@@ -8,11 +9,39 @@
 
 > [!WARNING]
 > ⚠️ THIS PROJECT IS AN ACTIVE WORK-IN-PROGRESS.
-> CORE COMMANDS ARE IMPLEMENTED AND USABLE, BUT THIS PROJECT IS STILL EVOLVING.
+>
+> ⚠️ CORE COMMANDS WORK BUT MAY BREAK BEAUSE THIS PROJECT IS STILL EVOLVING.
+>
 > ⚠️ SUBSEQUENT RELEASES MAY INCLUDE BREAKING CHANGES.
+
+`rpass list` output:
+
+<pre>
+rPass Store
+├── some-service
+│   └── username@some-service.com
+└── example
+    └── bob@example.com
+</pre>
+
+`tree` output:
+
+<pre>
+.rstore
+├── 3c11af1b-2c11-411a-bc4b-9e2aef34a928
+│   └── 26ee01a5-180d-4aee-9d03-2d83154c989b.gpg
+├── b206d775-8adc-4e1d-9f30-88a6cd6f1a10
+│   └── 67da9fe5-81fa-4990-a022-25623b788128.gpg
+└── store.toml
+</pre>
 
 ## Features
 
-- Asymmetrically/symmetrically encrypted secrets
-- Secret name/path anonymization
+- Asymmetric encryption
+- Symmetric encryption
+- Entry anonymization
 - Clipboard support
+- Git integration
+- Random password generation
+- Random passphrase generation
+- Manage multiple stores
