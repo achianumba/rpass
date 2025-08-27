@@ -1,6 +1,6 @@
 //! Secrets store.
-use eyre::{Result, WrapErr, bail};
 use gpgme::{Context, Protocol};
+use miette::{Result, bail, miette};
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
@@ -44,10 +44,9 @@ impl Store {
                 &path.display()
             ));
         } else {
-            create_dir_all(&path).wrap_err(red!(
-                "Failed to create password store at '{}'",
-                &path.display()
-            ))?;
+            let msg = red!("Failed to create password store at '{}'", &path.display());
+
+            create_dir_all(&path).map_err(|e| miette!("{}. {}", msg, e.to_string()))?;
         };
 
         Ok(Self {
@@ -98,22 +97,31 @@ impl Store {
         }
 
         if &self.index.name != name {
-            create_dir_all(file.parent().unwrap()).wrap_err(red!(
+            let msg = red!(
                 "Failed to create entry directory for '{}' at '{}'",
                 name,
                 file.display()
-            ))?;
+            );
+
+            create_dir_all(file.parent().unwrap())
+                .map_err(|e| miette!("{}. {}", msg, e.to_string()))?;
         }
 
-        write(file, cipher).wrap_err(red!("Failed to save data to '{}'", name))?;
+        write(file, cipher)
+            .map_err(|e| miette!("{}. {}", red!("Failed to save {}", name), e.to_string()))?;
 
         Ok(())
     }
 
     /// Encrypt a secret.
     pub fn encrypt(&self, name: &String, entry: &HashMap<String, String>) -> Result<Vec<u8>> {
-        let mut ctx = Context::from_protocol(Protocol::OpenPgp)
-            .wrap_err(red!("Failed to create encryption context for '{}.", name))?;
+        let mut ctx = Context::from_protocol(Protocol::OpenPgp).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to create encryption context for '{}.", name),
+                e.to_string()
+            )
+        })?;
 
         // Using match to hide potential secret info from output
         let mut _plaintext = match to_string(entry) {
@@ -123,7 +131,6 @@ impl Store {
             }
         };
 
-        // Where id == store's index file
         if name == &self.index.name {
             ctx.set_armor(true);
         } else {
@@ -133,24 +140,39 @@ impl Store {
         let mut cipher: Vec<u8> = Vec::new();
 
         // Doesn't require a random symmetric key for the session
-        // since an array of Key isn't passed to ctx.encrypt
+        // since an array of Keys isn't passed to ctx.encrypt
         if let Some(key) = &self.index.key {
-            let public_key = ctx
-                .get_key(key)
-                .wrap_err(red!("Failed to retrieve '{}' from keystore.", key))?;
+            let public_key = ctx.get_key(key).map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!("Failed to retrieve '{}' from keystore.", key),
+                    e.to_string()
+                )
+            })?;
 
             ctx.encrypt(Some(&public_key), _plaintext, &mut cipher)
-                .wrap_err(red!(
-                    "Failed to encrypt entry for {} using key with ID {}",
-                    name,
-                    key
-                ))?;
+                .map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!(
+                            "Failed to encrypt entry for {} using key with ID {}",
+                            name,
+                            key
+                        ),
+                        e.to_string()
+                    )
+                })?;
         } else {
-            ctx.encrypt(&vec![], _plaintext, &mut cipher)
-                .wrap_err(red!(
-                    "Failed to encrypt entry for {} using a symmetric key phrase.",
-                    name
-                ))?;
+            ctx.encrypt(&vec![], _plaintext, &mut cipher).map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!(
+                        "Failed to encrypt entry for {} using a symmetric key phrase.",
+                        name
+                    ),
+                    e.to_string()
+                )
+            })?;
         };
 
         Ok(cipher)
@@ -160,8 +182,13 @@ impl Store {
     pub fn load(path_string: &String) -> Result<Self> {
         let path = PathBuf::from(path_string);
         let file = path.join("store.toml");
-        let file_contents = read_to_string(&file)
-            .wrap_err(red!("Failed to read store index at '{}'.", file.display()))?;
+        let file_contents = read_to_string(&file).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to read store index at '{}'.", file.display()),
+                e.to_string()
+            )
+        })?;
 
         let mut key: Option<String> = None;
         let mut _cipher: Vec<u8> = Vec::new();
@@ -169,10 +196,16 @@ impl Store {
         if file_contents.starts_with("-") {
             _cipher = file_contents.as_bytes().to_vec();
         } else {
-            let saved_index: HashMap<String, String> = from_str(&file_contents).wrap_err(red!(
-                "Failed to deserialize saved store index in '{}'",
-                file.display()
-            ))?;
+            let saved_index: HashMap<String, String> = from_str(&file_contents).map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!(
+                        "Failed to deserialize saved store index in '{}'",
+                        file.display()
+                    ),
+                    e.to_string()
+                )
+            })?;
 
             if !saved_index.contains_key("key") {
                 bail!(red!(
@@ -193,15 +226,31 @@ impl Store {
             _cipher = file_contents.as_bytes().to_vec();
         };
 
-        let mut ctx = Context::from_protocol(Protocol::OpenPgp)
-            .wrap_err(red!("Failed to create decryption context for store."))?;
+        let mut ctx = Context::from_protocol(Protocol::OpenPgp).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to create decryption context for store."),
+                e.to_string()
+            )
+        })?;
         let mut plaintext_bytes: Vec<u8> = Vec::new();
 
         ctx.decrypt(&mut _cipher, &mut plaintext_bytes)
-            .wrap_err(red!("Failed to decrypt store index cipher"))?;
+            .map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!("Failed to decrypt store index cipher"),
+                    e.to_string()
+                )
+            })?;
 
-        let plaintext = String::from_utf8(plaintext_bytes)
-            .wrap_err(red!("Failed to convert store index bytes to string."))?;
+        let plaintext = String::from_utf8(plaintext_bytes).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to convert store index bytes to string."),
+                e.to_string()
+            )
+        })?;
 
         let paths: HashMap<String, String> = match from_str(&plaintext) {
             std::result::Result::Ok(m) => m,
@@ -230,7 +279,13 @@ impl Store {
             return self.read_and_echo_user_input(prompt);
         }
 
-        Ok(self.read_secret_user_input(prompt)?)
+        Ok(self.read_secret_user_input(prompt).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to read secret user input"),
+                e.to_string()
+            )
+        })?)
     }
 
     /// Read input from standard input and echo each keypress as it's entered.
@@ -238,9 +293,14 @@ impl Store {
         let mut input = String::new();
 
         print!("{}", prompt);
-        io::stdout().flush()?; // Make sure the above prompt is shown first.
+        // Makes sure the above prompt is shown first.
+        io::stdout()
+            .flush()
+            .map_err(|e| miette!("{}. {}", red!("Failed to flush stdout"), e.to_string()))?;
 
-        io::stdin().read_line(&mut input)?;
+        io::stdin()
+            .read_line(&mut input)
+            .map_err(|e| miette!("{}. {}", red!("Failed to read user input"), e.to_string()))?;
 
         Ok(input.trim().to_string())
     }
@@ -302,10 +362,16 @@ impl Store {
         prefix: &String,
     ) -> Result<()> {
         let mut entries: Vec<PathBuf> = read_dir(&directory)
-            .wrap_err(red!(
-                "Failed to read actual actual path at '{}'",
-                directory.display()
-            ))?
+            .map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!(
+                        "Failed to read actual actual path at '{}'",
+                        directory.display()
+                    ),
+                    e.to_string()
+                )
+            })?
             .map(|entry| entry.unwrap().path())
             .filter(|entry| !entry.ends_with("store.toml") && !entry.ends_with(".git"))
             .collect();
@@ -356,27 +422,52 @@ impl Store {
     }
 
     pub fn decrypt(&self, file: &PathBuf, name: &String) -> Result<HashMap<String, String>> {
-        let mut cipher = File::open(&file).wrap_err(red!(
-            "Failed to read secret for '{}' (actual: '{}'",
-            &name,
-            &file.display()
-        ))?;
+        let mut cipher = File::open(&file).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!(
+                    "Failed to read secret for '{}' (actual: '{}'",
+                    &name,
+                    &file.display()
+                ),
+                e.to_string()
+            )
+        })?;
 
         let mut plaintext_bytes: Vec<u8> = Vec::new();
 
-        let mut ctx = Context::from_protocol(Protocol::OpenPgp)
-            .wrap_err(red!("Failed to create encryption context for '{}.", name))?;
+        let mut ctx = Context::from_protocol(Protocol::OpenPgp).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to create encryption context for '{}.", name),
+                e.to_string()
+            )
+        })?;
 
         ctx.decrypt(&mut cipher, &mut plaintext_bytes)
-            .wrap_err(red!("Failed to decrypt entry for '{}'", name))?;
+            .map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!("Failed to decrypt entry for '{}'", name),
+                    e.to_string()
+                )
+            })?;
 
-        let plaintext = String::from_utf8(plaintext_bytes).wrap_err(red!(
-            "Failed to convert cipher to text content for '{}'",
-            name
-        ))?;
+        let plaintext = String::from_utf8(plaintext_bytes).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to convert cipher to text content for '{}'", name),
+                e.to_string()
+            )
+        })?;
 
-        let saved_secret: HashMap<String, String> =
-            from_str(&plaintext).wrap_err(red!("Failed to deserialize entry in '{}'", name))?;
+        let saved_secret: HashMap<String, String> = from_str(&plaintext).map_err(|e| {
+            miette!(
+                "{}. {}",
+                red!("Failed to deserialize entry in '{}'", name),
+                e.to_string()
+            )
+        })?;
 
         Ok(saved_secret)
     }

@@ -1,12 +1,12 @@
 //! CLI commands.
 use clap::Parser;
 use clap::Subcommand;
-use eyre::{Result, WrapErr};
+use miette::{Result, miette};
 #[cfg(not(debug_assertions))]
 use std::env::home_dir;
-use std::path::absolute;
 #[cfg(debug_assertions)]
 use std::path::MAIN_SEPARATOR_STR;
+use std::path::absolute;
 
 pub mod _copy;
 pub mod _move;
@@ -88,10 +88,16 @@ pub enum Commands {
 impl Cli {
     pub fn run(&mut self) -> Result<()> {
         self.store = absolute(&self.store)
-            .wrap_err(red!(
-                "Failed to parse absolute path to secrets store at '{}'",
-                &self.store
-            ))?
+            .map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!(
+                        "Failed to parse absolute path to secrets store at '{}'",
+                        &self.store
+                    ),
+                    e.to_string()
+                )
+            })?
             .display()
             .to_string();
 

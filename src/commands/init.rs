@@ -2,7 +2,7 @@ use crate::store::Store;
 use crate::utils::git;
 use crate::{blue, green};
 use clap::Args;
-use eyre::Result;
+use miette::Result;
 use std::path::PathBuf;
 
 /// Initialize a new password store

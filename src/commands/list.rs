@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use clap::Args;
-use eyre::Result;
+use miette::Result;
 
 use crate::store::Store;
 use crate::{blue, purple};

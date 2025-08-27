@@ -1,6 +1,7 @@
 <!-- markdownlint-disable no-inline-html -->
 # rpass
 
+[![Latest Version](https://img.shields.io/crates/v/rpass.svg)](https://crates.io/crates/rpass)
 ![Crates.io Total Downloads](https://img.shields.io/crates/d/rpass)
 ![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/rpass/latest)
 ![Crates.io Size](https://img.shields.io/crates/size/rpass)

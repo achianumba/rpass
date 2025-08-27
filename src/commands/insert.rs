@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use clap::Args;
-use eyre::{Result, bail};
+use miette::{Result, bail};
 
 use crate::{green, purple, red, store::Store, utils::git, yellow};
 

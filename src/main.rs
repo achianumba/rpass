@@ -37,7 +37,7 @@
 //! cargo binstall rpass
 //! ```
 use clap::Parser;
-use eyre::Result;
+use miette::Result;
 
 mod commands;
 mod store;

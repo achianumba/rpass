@@ -1,5 +1,5 @@
 use clap::Args;
-use eyre::{Result, bail};
+use miette::{Result, bail};
 
 use crate::{blue, purple, red, store::Store, utils::git};
 
@@ -56,7 +56,8 @@ impl Edit {
                         println!("Current name: {}", &field);
                     }
 
-                    let new_field = store.read_user_input(format!("New {field} label"), &self.echo)?;
+                    let new_field =
+                        store.read_user_input(format!("New {field} label"), &self.echo)?;
 
                     entry.insert(new_field, value.to_owned());
                 }

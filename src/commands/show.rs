@@ -5,7 +5,7 @@ use arboard::Clipboard;
 #[cfg(target_os = "linux")]
 use arboard::SetExtLinux;
 use clap::Args;
-use eyre::{Result, bail};
+use miette::{Result, bail, miette};
 
 use crate::{red, store::Store};
 
@@ -94,9 +94,41 @@ impl Show {
 
             if cfg!(target_os = "linux") {
                 let deadline = Instant::now() + Duration::from_secs(self.wait);
-                Clipboard::new()?.set().wait_until(deadline).text(&output)?;
+                Clipboard::new()
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to access to clipboard"),
+                            e.to_string()
+                        )
+                    })?
+                    .set()
+                    .wait_until(deadline)
+                    .text(&output)
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to access the clipboard"),
+                            e.to_string()
+                        )
+                    })?;
             } else {
-                Clipboard::new()?.set_text(&output)?;
+                Clipboard::new()
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to copy entry fields(s) to the clipboard"),
+                            e.to_string()
+                        )
+                    })?
+                    .set_text(&output)
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to copy entry fields(s) to the clipboard"),
+                            e.to_string()
+                        )
+                    })?;
             }
         } else {
             println!("{output}");
