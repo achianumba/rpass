@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/achianumba/rpass/compare/v0.1.7...v0.1.8) - 2025-08-27
+
+### Added
+
+- decrypt entries directly with gpg cli
+- encrypt data through an io pipe to/from gpg
+- improve user-friendly std output
+
+### Fixed
+
+- use of undeclared type 'Instant'
+
+### Other
+
+- update docs
+
 ## [0.1.7](https://github.com/achianumba/rpass/compare/v0.1.6...v0.1.7) - 2025-08-24
 
 ### Added
