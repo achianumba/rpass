@@ -1,4 +1,5 @@
 <!-- markdownlint-disable no-inline-html -->
+
 # rpass
 
 [![Latest Version](https://img.shields.io/crates/v/rpass.svg)](https://crates.io/crates/rpass)
@@ -38,91 +39,32 @@ rPass Store
 
 ## Features
 
-- Asymmetric encryption
-- Symmetric encryption
+- Cross-platform
+- Asymmetric/Symmetric encryption
 - Entry anonymization
 - Clipboard support
 - Git integration
-- Random password generation
-- Random passphrase generation
+- Random password/passphrase generation
 - Manage multiple stores
+
+<detials>
+<summary><strong>Encryption</strong>
+
+It just writes and reads data to and from `gpg's` stdin and stdout through a pipe. This way, the contents of a secret aren't logged (not even by `auditd`).
+
+</details>
+
 
 <!-- markdownlint-disable first-line-h1 no-emphasis-as-heading no-inline-html-->
 
 ## Installation
 
-**Requirements**
+**Dependencies**
 
-Building `rpass` from source (including **installing it from Crates.io**) on the underlisted platforms requires that you run the given command command(s) to install the crate's system dependencies.
+`rpass` has the following runtime dependencies:
 
-<details>
-<summary><strong>Debian/Ubuntu based</strong></summary>
-
-```shell
-apt install -y pkg-config gcc libgpgme-dev
-```
-
-</details>
-
-<details>
-<summary><strong>RHEL/Fedora based</strong></summary>
-
-```shell
-dnf install -y gcc gpgme-devel
-```
-
-</details>
-
-<details>
-<summary><strong>NixOS (INCOMPLETE)</strong></summary>
-
-```shell
-nix-env -iA nixpkgs.gcc \
-  nixpkgs.pkg-config \
-  nixpkgs.gpgme.dev \
-  nixpkgs.libassuan.dev \
-  nixpkgs.libgpg-error.dev
-```
-
-```shell
-export EXPORT $HOME/.nix-profile/lib/pkgconfig/
-```
-
-</details>
-
-<details>
-<summary><strong>Alpine (INCOMPLETE)</strong></summary>
-
-```shell
-apk add musl-dev gcc libgpg-error-dev gpgme-dev
-```
-
-</details>
-
-<details>
-<summary><strong>Arch</strong></summary>
-
-```shell
-pacman -Syu gcc pkg-config gpgme
-```
-
-</details>
-
-<details>
-<summary><strong>macOS (NOT TESTED)</strong></summary>
-
-```shell
-brew install gnupg pinentry-mac
-```
-
-</details>
-
-<details>
-<summary><strong>Windows (NOT TESTED)</strong></summary>
-
-Download and install [`Gpg4win`](https://www.gpg4win.org)
-
-</details>
+- [gpg](https://gnupg.org/download) for data encryption/decryption.
+- [Git](https://git-scm.com) for **optional** revision control.
 
 ### Install from source
 
@@ -361,7 +303,7 @@ The following are on the roadmap but not yet implemented:
 
 - `grep`: Search for strings in secrets
 - `find`: Search for strings in secret pathnames
-- `export`: Export secret, group, or store to JSON
+- `export`: Export secret, group, or store to JSON or to an archive with the same file tree a recipient.
 - `import`: Import secrets.
 - `serve`: Serve secrets over a REST API.
 

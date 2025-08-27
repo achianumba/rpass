@@ -1,4 +1,5 @@
 <!-- markdownlint-disable no-inline-html -->
+
 # rpass
 
 [![Latest Version](https://img.shields.io/crates/v/rpass.svg)](https://crates.io/crates/rpass)
@@ -38,11 +39,17 @@ rPass Store
 
 ## Features
 
-- Asymmetric encryption
-- Symmetric encryption
+- Cross-platform
+- Asymmetric/Symmetric encryption
 - Entry anonymization
 - Clipboard support
 - Git integration
-- Random password generation
-- Random passphrase generation
+- Random password/passphrase generation
 - Manage multiple stores
+
+<detials>
+<summary><strong>Encryption</strong>
+
+It just writes and reads data to and from `gpg's` stdin and stdout through a pipe. This way, the contents of a secret aren't logged (not even by `auditd`).
+
+</details>
