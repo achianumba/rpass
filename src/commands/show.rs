@@ -92,44 +92,46 @@ impl Show {
                 &self.name, output
             );
 
-            if cfg!(target_os = "linux") {
-                let deadline = Instant::now() + Duration::from_secs(self.wait);
-                Clipboard::new()
-                    .map_err(|e| {
-                        miette!(
-                            "{}. {}",
-                            red!("Failed to access to clipboard"),
-                            e.to_string()
-                        )
-                    })?
-                    .set()
-                    .wait_until(deadline)
-                    .text(&output)
-                    .map_err(|e| {
-                        miette!(
-                            "{}. {}",
-                            red!("Failed to access the clipboard"),
-                            e.to_string()
-                        )
-                    })?;
-            } else {
-                Clipboard::new()
-                    .map_err(|e| {
-                        miette!(
-                            "{}. {}",
-                            red!("Failed to copy entry fields(s) to the clipboard"),
-                            e.to_string()
-                        )
-                    })?
-                    .set_text(&output)
-                    .map_err(|e| {
-                        miette!(
-                            "{}. {}",
-                            red!("Failed to copy entry fields(s) to the clipboard"),
-                            e.to_string()
-                        )
-                    })?;
-            }
+            #[cfg(target_os = "linux")]
+            let deadline = Instant::now() + Duration::from_secs(self.wait);
+
+            #[cfg(target_os = "linux")]
+            Clipboard::new()
+                .map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to access to clipboard"),
+                        e.to_string()
+                    )
+                })?
+                .set()
+                .wait_until(deadline)
+                .text(&output)
+                .map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to access the clipboard"),
+                        e.to_string()
+                    )
+                })?;
+
+            #[cfg(not(target_os = "linux"))]
+            Clipboard::new()
+                .map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to copy entry fields(s) to the clipboard"),
+                        e.to_string()
+                    )
+                })?
+                .set_text(&output)
+                .map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to copy entry fields(s) to the clipboard"),
+                        e.to_string()
+                    )
+                })?;
         } else {
             println!("{output}");
         }
