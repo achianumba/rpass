@@ -5,7 +5,7 @@ use arboard::Clipboard;
 #[cfg(target_os = "linux")]
 use arboard::SetExtLinux;
 use clap::Args;
-use eyre::{Result, bail};
+use miette::{Result, bail, miette};
 
 use crate::{red, store::Store};
 
@@ -37,7 +37,7 @@ pub struct Show {
 
 impl Show {
     pub fn run(&self, path_string: &String) -> Result<()> {
-        let store = Store::load(path_string)?;
+        let mut store = Store::load(path_string)?;
         let entry_path = store.get_path(&self.name)?;
 
         if !entry_path.is_file() {
@@ -48,7 +48,7 @@ impl Show {
             ));
         }
 
-        let entry = store.decrypt(&entry_path, &self.name)?;
+        let entry = store.decrypt(&entry_path.display().to_string(), &self.name)?;
         let single_field = self.fields.len() == 1;
         let mut output = if single_field {
             String::new()
@@ -94,9 +94,41 @@ impl Show {
 
             if cfg!(target_os = "linux") {
                 let deadline = Instant::now() + Duration::from_secs(self.wait);
-                Clipboard::new()?.set().wait_until(deadline).text(&output)?;
+                Clipboard::new()
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to access to clipboard"),
+                            e.to_string()
+                        )
+                    })?
+                    .set()
+                    .wait_until(deadline)
+                    .text(&output)
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to access the clipboard"),
+                            e.to_string()
+                        )
+                    })?;
             } else {
-                Clipboard::new()?.set_text(&output)?;
+                Clipboard::new()
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to copy entry fields(s) to the clipboard"),
+                            e.to_string()
+                        )
+                    })?
+                    .set_text(&output)
+                    .map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to copy entry fields(s) to the clipboard"),
+                            e.to_string()
+                        )
+                    })?;
             }
         } else {
             println!("{output}");

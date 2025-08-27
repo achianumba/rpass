@@ -1,7 +1,7 @@
 use std::fs::{remove_dir_all, remove_file};
 
 use clap::Args;
-use eyre::{Result, WrapErr};
+use miette::{Result, miette};
 
 use crate::{blue, red, store::Store, utils::git, yellow};
 
@@ -40,8 +40,13 @@ impl Remove {
 
                 git(path_string, ["commit", "-m", "'remove group'"])?;
             } else {
-                remove_dir_all(&entry_file)
-                    .wrap_err(red!("Failed to remove entry group named {}", &self.name))?;
+                remove_dir_all(&entry_file).map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to remove entry group named {}", &self.name),
+                        e.to_string()
+                    )
+                })?;
             }
         }
 
@@ -66,8 +71,13 @@ impl Remove {
 
                 git(path_string, ["commit", "-m", "'remove entry'"])?;
             } else {
-                remove_file(entry_file)
-                    .wrap_err(red!("Failed to remove entry named {}", &self.name))?;
+                remove_file(entry_file).map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to remove entry named {}", &self.name),
+                        e.to_string()
+                    )
+                })?;
             }
         }
 

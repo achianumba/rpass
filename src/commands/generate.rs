@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use clap::{ArgAction::Set, ArgGroup, Args};
-use eyre::{Ok, Result, bail};
+use miette::{Result, bail};
 use rand::{
     rngs::ThreadRng,
     seq::{IndexedRandom, IteratorRandom},
@@ -7867,7 +7867,7 @@ impl Generate {
                 store.read_user_input("username".to_string(), &true)?,
             );
 
-            store.save(entry_file, name, &entry)?;
+            store.encrypt(entry_file.display().to_string(), name, &entry)?;
             store.save_index()?;
 
             if store.is_repo() {

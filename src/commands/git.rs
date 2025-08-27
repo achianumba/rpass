@@ -1,5 +1,5 @@
 use clap::Args;
-use eyre::Result;
+use miette::Result;
 
 use crate::utils::git;
 

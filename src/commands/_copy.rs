@@ -1,7 +1,7 @@
 use std::fs::{copy, create_dir_all};
 
 use clap::Args;
-use eyre::{Context, Result, bail};
+use miette::{Context, IntoDiagnostic, Result, bail};
 
 use crate::{blue, red, store::Store, utils::git, yellow};
 
@@ -56,12 +56,16 @@ impl Copy {
         } else {
             if let Some(d) = to.parent() {
                 if !d.exists() {
-                    create_dir_all(d).wrap_err(msg.to_owned())?;
+                    create_dir_all(d)
+                        .into_diagnostic()
+                        .wrap_err(msg.to_owned())?;
                 }
             }
         }
 
-        copy(&from, &to).wrap_err(msg.to_owned())?;
+        copy(&from, &to)
+            .into_diagnostic()
+            .wrap_err(msg.to_owned())?;
 
         store.save_index()?;
 

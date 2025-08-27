@@ -1,7 +1,7 @@
 use std::fs::{create_dir_all, rename};
 
 use clap::Args;
-use eyre::{bail, Context, Result};
+use miette::{Result, bail, miette};
 
 use crate::{blue, red, store::Store, utils::git, yellow};
 
@@ -23,7 +23,10 @@ impl Move {
         let from = store.get_path(&self.from)?;
 
         if !from.exists() {
-            bail!(red!("Failed to move secret/group. Entry named {} does not exist", &self.from));
+            bail!(red!(
+                "Failed to move secret/group. Entry named {} does not exist",
+                &self.from
+            ));
         }
 
         let mut to = store.set_entry_path(&self.to)?;
@@ -62,15 +65,23 @@ impl Move {
         } else {
             if let Some(d) = to.parent() {
                 if !d.exists() {
-                    create_dir_all(d).wrap_err(red!(
-                        "Failed to move {} to {}",
-                        &self.from,
-                        &self.to
-                    ))?;
+                    create_dir_all(d).map_err(|e| {
+                        miette!(
+                            "{}. {}",
+                            red!("Failed to move {} to {}", &self.from, &self.to),
+                            e.to_string()
+                        )
+                    })?;
                 }
             }
 
-            rename(from, to).wrap_err(red!("Failed to move {} to {}", &self.from, &self.to))?;
+            rename(from, to).map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!("Failed to move {} to {}", &self.from, &self.to),
+                    e.to_string()
+                )
+            })?;
         }
 
         println!(
