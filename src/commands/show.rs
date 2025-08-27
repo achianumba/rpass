@@ -37,7 +37,7 @@ pub struct Show {
 
 impl Show {
     pub fn run(&self, path_string: &String) -> Result<()> {
-        let store = Store::load(path_string)?;
+        let mut store = Store::load(path_string)?;
         let entry_path = store.get_path(&self.name)?;
 
         if !entry_path.is_file() {
@@ -48,7 +48,7 @@ impl Show {
             ));
         }
 
-        let entry = store.decrypt(&entry_path, &self.name)?;
+        let entry = store.decrypt(&entry_path.display().to_string(), &self.name)?;
         let single_field = self.fields.len() == 1;
         let mut output = if single_field {
             String::new()

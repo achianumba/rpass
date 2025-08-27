@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::create_dir_all};
 
 use clap::Args;
-use miette::{Result, bail};
+use miette::{Result, bail, miette};
 
 use crate::{green, purple, red, store::Store, utils::git, yellow};
 
@@ -81,7 +81,22 @@ impl Insert {
             }
         }
 
-        store.save(entry_file, &self.name, &entry)?;
+        if let Some(parent_dir) = entry_file.parent() {
+            if !parent_dir.exists() {
+                create_dir_all(&parent_dir).map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!(
+                            "Failed to create a parent directory for {}",
+                            parent_dir.display()
+                        ),
+                        e.to_string()
+                    )
+                })?;
+            }
+        }
+
+        store.encrypt(entry_file.display().to_string(), &self.name, &entry)?;
         store.save_index()?;
 
         if store.is_repo() {

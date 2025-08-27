@@ -41,7 +41,7 @@ impl Edit {
             ));
         }
 
-        let mut entry = store.decrypt(&entry_file, &self.name)?;
+        let mut entry = store.decrypt(&entry_file.display().to_string(), &self.name)?;
 
         for field in &self.new {
             let value = store.read_user_input(field.to_owned(), &self.echo)?;
@@ -93,7 +93,7 @@ impl Edit {
             };
         }
 
-        store.save(entry_file, &self.name, &entry)?;
+        store.encrypt(entry_file.display().to_string(), &self.name, &entry)?;
 
         if store.is_repo() {
             git(path_string, ["add", "."])?;

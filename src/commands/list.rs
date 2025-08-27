@@ -18,7 +18,7 @@ pub struct List {
 
 impl List {
     pub fn run(&self, path_string: &String) -> Result<()> {
-        let store = Store::load(path_string)?;
+        let mut store = Store::load(path_string)?;
         let mut name = String::new();
         let mut _root = PathBuf::new();
 
@@ -30,7 +30,7 @@ impl List {
         }
 
         if _root.is_file() {
-            let fields = store.decrypt(&_root, &name)?;
+            let fields = store.decrypt(&_root.display().to_string(), &name)?;
             println!("\n{} contains the following fields\n", blue!("{}", &name));
 
             for (field, _) in fields {

@@ -1,7 +1,7 @@
 //! Secrets store.
 use miette::{Result, bail, miette};
 use std::collections::HashMap;
-use std::fs::{File, create_dir_all, read_dir, read_to_string, write};
+use std::fs::{create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -94,32 +94,6 @@ impl Store {
         Ok(())
     }
 
-    /// Save a secret to a file.
-    pub fn save(
-        &self,
-        file: PathBuf,
-        name: &String,
-        entry: &HashMap<String, String>,
-    ) -> Result<()> {
-        if self.index.key.is_some() && self.file == file {
-        } else {
-            self.encrypt(file.display().to_string(), name, entry)?;
-        }
-
-        if &self.index.name != name {
-            let msg = red!(
-                "Failed to create entry directory for '{}' at '{}'",
-                name,
-                file.display()
-            );
-
-            create_dir_all(file.parent().unwrap())
-                .map_err(|e| miette!("{}. {}", msg, e.to_string()))?;
-        }
-
-        Ok(())
-    }
-
     /// Encrypt a secret.
     pub fn encrypt(
         &self,
@@ -135,7 +109,7 @@ impl Store {
             }
         };
 
-        let mut args: Vec<&str> = vec![];
+        let mut args: Vec<&str> = vec!["-q", "--batch", "--yes"];
 
         if name == &self.index.name {
             args.push("-a");
@@ -204,99 +178,157 @@ impl Store {
 
     /// Load the index of an existing store
     pub fn load(path_string: &String) -> Result<Self> {
-        let path = PathBuf::from(path_string);
-        let file = path.join("store.toml");
-        let file_contents = read_to_string(&file).map_err(|e| {
+        let mut store = Self {
+            index: StoreIndex {
+                key: None,
+                paths: HashMap::new(),
+                name: "rpass::store::index".to_string(),
+            },
+            path: PathBuf::from(path_string),
+            file: PathBuf::from(path_string).join("store.toml"),
+        };
+
+        let file = PathBuf::from(path_string)
+            .join("store.toml")
+            .display()
+            .to_string();
+
+        let paths = store.decrypt(&file, &"rpass::store::index".to_string())?;
+
+        store.index.paths = paths;
+
+        Ok(store)
+    }
+
+    pub fn decrypt(&mut self, file: &String, name: &String) -> Result<HashMap<String, String>> {
+        let mut args = vec!["-d", "-q", "--batch", "--yes"];
+
+        if name != &self.index.name {
+            args.push(file);
+        }
+
+        let mut child_process = Command::new("gpg")
+            .args(args)
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!("Failed to run 'gpg' command."),
+                    e.to_string()
+                )
+            })?;
+
+        if let Some(mut stdin) = child_process.stdin.take() {
+            if name == &self.index.name {
+                let (mut index_cipher, key) = Store::read_index(file)?;
+
+                self.index.key = key;
+
+                stdin.write_all(&mut index_cipher).map_err(|e| {
+                    miette!(
+                        "{}. {}",
+                        red!("Failed to pipe store index to gpg"),
+                        e.to_string()
+                    )
+                })?;
+            }
+        }
+
+        let output = child_process.wait_with_output().map_err(|e| {
+            let msg = if name == &self.index.name {
+                red!("Failed to decrypt store index ad {}", &self.file.display())
+            } else {
+                red!("Failed to decrypt entry for {}", name)
+            };
+
+            miette!("{}. {}", msg, e.to_string())
+        })?;
+
+        let mut _map: HashMap<String, String> = HashMap::new();
+
+        if output.status.success() {
+            let plaintext = String::from_utf8(output.stdout).map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!(
+                        "Failed to serialize decrypted secret {}",
+                        self.file.display()
+                    ),
+                    e.to_string()
+                )
+            })?;
+
+            _map = match from_str(&plaintext) {
+                std::result::Result::Ok(m) => m,
+                Err(_) => {
+                    bail!(red!("Failed to deserialize store index at '{}'", name));
+                }
+            };
+        } else {
+            bail!(
+                "{}\n{}",
+                red!("Failed to decrypt to decrypt entry for {}", name),
+                String::from_utf8(output.stderr).map_err(|e| miette!("{}", e.to_string()))?
+            );
+        }
+
+        Ok(_map)
+    }
+
+    fn read_index(path_string: &String) -> Result<(Vec<u8>, Option<String>)> {
+        let file_contents = read_to_string(path_string).map_err(|e| {
             miette!(
                 "{}. {}",
-                red!("Failed to read store index at '{}'.", file.display()),
+                red!("Failed to read store index at '{path_string}'."),
                 e.to_string()
             )
         })?;
 
-        // let mut key: Option<String> = None;
-        // let mut _cipher: Vec<u8> = Vec::new();
+        let mut _paths_cipher: Vec<u8> = Vec::new();
+        let mut key: Option<String> = None;
 
-        // if file_contents.starts_with("-") {
-        //     _cipher = file_contents.as_bytes().to_vec();
-        // } else {
-        //     let saved_index: HashMap<String, String> = from_str(&file_contents).map_err(|e| {
-        //         miette!(
-        //             "{}. {}",
-        //             red!(
-        //                 "Failed to deserialize saved store index in '{}'",
-        //                 file.display()
-        //             ),
-        //             e.to_string()
-        //         )
-        //     })?;
+        if file_contents.starts_with("-") {
+            _paths_cipher = file_contents.as_bytes().to_vec();
+        } else {
+            let saved_index: HashMap<String, String> = from_str(&file_contents).map_err(|e| {
+                miette!(
+                    "{}. {}",
+                    red!(
+                        "Failed to deserialize saved store index in '{}'",
+                        path_string
+                    ),
+                    e.to_string()
+                )
+            })?;
 
-        //     if !saved_index.contains_key("key") {
-        //         bail!(red!(
-        //             "'key' field missing from the store index at '{}'",
-        //             &file.display()
-        //         ));
-        //     }
+            match saved_index.get("key") {
+                Some(k) => {
+                    key = Some(k.to_owned());
+                }
+                None => {
+                    bail!(red!(
+                        "'key' field missing from the store index at '{}'",
+                        path_string
+                    ));
+                }
+            }
 
-        //     key = Some(saved_index["key"].to_string());
+            match saved_index.get("paths") {
+                Some(p) => {
+                    _paths_cipher = p.as_bytes().to_vec();
+                }
+                None => {
+                    bail!(red!(
+                        "'paths' field is missing from the store index at '{}'",
+                        path_string
+                    ));
+                }
+            }
+        };
 
-        //     if !saved_index.contains_key("paths") {
-        //         bail!(red!(
-        //             "'paths' field is missing from the store index at '{}'",
-        //             &file.display()
-        //         ));
-        //     }
-
-        //     _cipher = file_contents.as_bytes().to_vec();
-        // };
-
-        // let mut ctx = Context::from_protocol(Protocol::OpenPgp).map_err(|e| {
-        //     miette!(
-        //         "{}. {}",
-        //         red!("Failed to create decryption context for store."),
-        //         e.to_string()
-        //     )
-        // })?;
-        // let mut plaintext_bytes: Vec<u8> = Vec::new();
-
-        // ctx.decrypt(&mut _cipher, &mut plaintext_bytes)
-        //     .map_err(|e| {
-        //         miette!(
-        //             "{}. {}",
-        //             red!("Failed to decrypt store index cipher"),
-        //             e.to_string()
-        //         )
-        //     })?;
-
-        // let plaintext = String::from_utf8(plaintext_bytes).map_err(|e| {
-        //     miette!(
-        //         "{}. {}",
-        //         red!("Failed to convert store index bytes to string."),
-        //         e.to_string()
-        //     )
-        // })?;
-
-        // let paths: HashMap<String, String> = match from_str(&plaintext) {
-        //     std::result::Result::Ok(m) => m,
-        //     Err(_) => {
-        //         bail!(red!(
-        //             "Failed to deserialize store index at '{}'",
-        //             &file.display()
-        //         ));
-        //     }
-        // };
-
-        let name = "rpass::index::file".to_string();
-
-        Ok(Self {
-            path,
-            file,
-            index: StoreIndex {
-                key: Some("A6C4C64CCC8E8D4A278660B0A78A721FDBC087D9".to_string()),
-                paths: HashMap::new(),
-                name,
-            }, // StoreIndex { key, paths, name },
-        })
+        Ok((_paths_cipher, key))
     }
 
     /// Read input from standard input
@@ -447,57 +479,6 @@ impl Store {
         }
 
         Ok(())
-    }
-
-    pub fn decrypt(&self, file: &PathBuf, name: &String) -> Result<HashMap<String, String>> {
-        let mut cipher = File::open(&file).map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!(
-                    "Failed to read secret for '{}' (actual: '{}'",
-                    &name,
-                    &file.display()
-                ),
-                e.to_string()
-            )
-        })?;
-
-        let mut plaintext_bytes: Vec<u8> = Vec::new();
-
-        // let mut ctx = Context::from_protocol(Protocol::OpenPgp).map_err(|e| {
-        //     miette!(
-        //         "{}. {}",
-        //         red!("Failed to create encryption context for '{}.", name),
-        //         e.to_string()
-        //     )
-        // })?;
-
-        // ctx.decrypt(&mut cipher, &mut plaintext_bytes)
-        //     .map_err(|e| {
-        //         miette!(
-        //             "{}. {}",
-        //             red!("Failed to decrypt entry for '{}'", name),
-        //             e.to_string()
-        //         )
-        //     })?;
-
-        let plaintext = String::from_utf8(plaintext_bytes).map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!("Failed to convert cipher to text content for '{}'", name),
-                e.to_string()
-            )
-        })?;
-
-        let saved_secret: HashMap<String, String> = from_str(&plaintext).map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!("Failed to deserialize entry in '{}'", name),
-                e.to_string()
-            )
-        })?;
-
-        Ok(saved_secret)
     }
 
     pub fn is_repo(&self) -> bool {
