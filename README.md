@@ -7,17 +7,32 @@
 ![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/rpass/latest)
 ![Crates.io Size](https://img.shields.io/crates/size/rpass)
 
-`rpass` is a [`pass`](https://www.passwordstore.org/) inspired secrets manager.
+`rpass` is a GPG-based secrets manager with the following features:
 
-> [!WARNING]
-> ⚠️ THIS PROJECT IS AN ACTIVE WORK-IN-PROGRESS.
->
-> ⚠️ CORE COMMANDS WORK BUT MAY BREAK BEAUSE THIS PROJECT IS STILL EVOLVING.
->
-> ⚠️ SUBSEQUENT RELEASES MAY INCLUDE BREAKING CHANGES.
+<details>
+<summary>Cross-platform support</summary>
 
-`rpass list` output:
+`rpass` currently works on x86_64 Linux and Windows but hasn't been tested on other platforms.
+</details>
 
+<details>
+<summary>Asymmetric/Symmetric encryption</summary>
+You have the option of using a store of symmetricly or asymmetrically encrypted 
+secrets depending on whether the store is initialized using the `-k` option.
+
+Inputs and outputs for encryption and decryption operations are passed through pipes to and from a call to `gpg` call in a child process. 
+</details>
+
+<details>
+<summary>UUID-based entry anonymization</summary>
+<table>
+<tr>
+<th><code>rpass</code> list</th>
+<th><code>tree</code> output</th>
+</tr>
+
+<tr>
+<td>
 <pre>
 rPass Store
 ├── some-service
@@ -25,9 +40,9 @@ rPass Store
 └── example
     └── bob@example.com
 </pre>
+</td>
 
-`tree` output:
-
+<td>
 <pre>
 .rstore
 ├── 3c11af1b-2c11-411a-bc4b-9e2aef34a928
@@ -36,23 +51,45 @@ rPass Store
 │   └── 67da9fe5-81fa-4990-a022-25623b788128.gpg
 └── store.toml
 </pre>
+</td>
+</tr>
+</table>
+</details>
 
-## Features
+<details>
+<summary>Random password/passphrase generation</summary>
 
-- Cross-platform
-- Asymmetric/Symmetric encryption
-- Entry anonymization
-- Clipboard support
-- Git integration
-- Random password/passphrase generation
-- Manage multiple stores
-
-<detials>
-<summary><strong>Encryption</strong>
-
-It just writes and reads data to and from `gpg's` stdin and stdout through a pipe. This way, the contents of a secret aren't logged (not even by `auditd`).
+Random passwords are generated from [printable ASCII characters](https://en.wikipedia.org/wiki/ASCII#Printable_character_table) while random passphrases are generated from [EFF's large word list](https://www.eff.org/files/2016/07/18/eff_large_wordlist.txt).
 
 </details>
+
+<details>
+<summary>Multi-store management</summary>
+
+Maintain multiple stores in different locations or change the store's default location by passing the global `STORE` CLI option
+or by setting the `DEFAULT_RPASS_STORE` environment variable.
+
+</details>
+
+<details>
+<summary>Git integration</summary>
+
+`rpass` commits generic info for each change to an entry or to the store in general without revealing specific information about entries.
+</details>
+
+<details>
+<summary>Clipboard support</summary>
+
+Subcommands such as `show` optionally copy secrets to the clipboard.
+</details>
+<br>
+
+> [!WARNING]
+> ⚠️ THIS PROJECT IS AN ACTIVE WORK-IN-PROGRESS.
+>
+> ⚠️ CORE COMMANDS WORK BUT MAY BREAK BEAUSE THIS PROJECT IS STILL EVOLVING.
+>
+> ⚠️ SUBSEQUENT RELEASES MAY INCLUDE BREAKING CHANGES.
 
 
 <!-- markdownlint-disable first-line-h1 no-emphasis-as-heading no-inline-html-->
@@ -66,21 +103,21 @@ It just writes and reads data to and from `gpg's` stdin and stdout through a pip
 - [gpg](https://gnupg.org/download) for data encryption/decryption.
 - [Git](https://git-scm.com) for **optional** revision control.
 
-### Install from source
+### Build/Install from Source
 
-```shell
-git clone https://github.com/achianumba/rpass.git
-cd rpass
-cargo build --release
-sudo mv target/release/rpass /usr/local/bin
-```
-
-### Install from Crates.io
+**Crates.io**
 
 ```shell
 cargo install rpass
 ```
 
+**GitHub**
+
+```shell
+cargo install --git https://github.com/achianumba/rpass.git
+```
+
+**NixOS**
 
 <!-- markdownlint-disable first-line-h1 no-inline-html no-emphasis-as-heading -->
 
