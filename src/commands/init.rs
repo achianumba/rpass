@@ -1,8 +1,10 @@
-use crate::store::Store;
+use crate::store::{Store, StoreIndex};
 use crate::utils::git;
-use crate::{blue, green};
+use crate::{blue, green, red};
 use clap::Args;
-use miette::Result;
+use miette::{Result, bail, miette};
+use std::collections::HashMap;
+use std::fs::{create_dir_all, read_dir};
 use std::path::PathBuf;
 
 /// Initialize a new password store
@@ -22,7 +24,40 @@ pub struct Init {
 impl Init {
     /// Create a new folder at `path_string` and saves `store.toml` to the created folder.
     pub fn run(&self, path_string: &String) -> Result<()> {
-        let store = Store::init(self.key.to_owned(), PathBuf::from(path_string))?;
+        let path = PathBuf::from(path_string);
+        let file = path.join("store.toml");
+
+        if path.exists() {
+            let paths_count = read_dir(&path)
+                .map_err(|e| {
+                    miette!(
+                        "{} {}",
+                        red!("Failed to read the contents of {}", path_string),
+                        e.to_string()
+                    )
+                })?
+                .count();
+
+            if paths_count > 1 {
+                bail!(red!(
+                    "Aborting password store initialization. '{}' already exists and isn't empty.",
+                    &path.display()
+                ));
+            }
+        } else {
+            let msg = red!("Failed to create password store at '{}'", &path.display());
+            create_dir_all(&path).map_err(|e| miette!("{}. {}", msg, e.to_string()))?;
+        };
+
+        let store = Store {
+            index: StoreIndex {
+                key: self.key.to_owned(),
+                paths: HashMap::new(),
+                name: "rpass::store::index".to_string(),
+            },
+            path,
+            file,
+        };
 
         store.save_index()?;
 

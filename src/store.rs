@@ -1,7 +1,7 @@
 //! Secrets store.
 use miette::{Result, bail, miette};
 use std::collections::HashMap;
-use std::fs::{create_dir_all, read_dir, read_to_string, write};
+use std::fs::{read_dir, read_to_string, write};
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -36,30 +36,6 @@ pub struct StoreIndex {
 }
 
 impl Store {
-    /// Create a secrets store.
-    pub fn init(key: Option<String>, path: PathBuf) -> Result<Self> {
-        if path.exists() {
-            bail!(red!(
-                "Aborting password store initialization. '{}' already exists.",
-                &path.display()
-            ));
-        } else {
-            let msg = red!("Failed to create password store at '{}'", &path.display());
-
-            create_dir_all(&path).map_err(|e| miette!("{}. {}", msg, e.to_string()))?;
-        };
-
-        Ok(Self {
-            index: StoreIndex {
-                key,
-                paths: HashMap::new(),
-                name: "rpass::store::index".to_string(),
-            },
-            path: path.to_owned(),
-            file: path.to_owned().join("store.toml"),
-        })
-    }
-
     /// Save a store's `store.toml` file.
     pub fn save_index(&self) -> Result<()> {
         let mut index_bytes: Vec<u8> = Vec::new();
