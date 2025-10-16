@@ -3,9 +3,7 @@ name: Release-plz
 
 # The action runs on every push to the main branch.
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   # Release unpublished packages.
@@ -13,7 +11,7 @@ jobs:
   # and you want to handle `cargo publish` and git tag push by yourself,
   # remove this job.
   release-plz-release:
-    if: ${{ github.repository_owner == 'achianumba' }}
+    if: ${{ github.repository_owner == 'achianumba' && github.ref == 'refs/heads/main' }}
     name: Release-plz release
     runs-on: ubuntu-latest
     # Used to push tags, and create releases.
