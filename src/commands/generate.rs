@@ -7867,7 +7867,7 @@ impl Generate {
                 store.read_user_input("username".to_string(), &true)?,
             );
 
-            store.encrypt(entry_file.display().to_string(), name, &entry)?;
+            store.encrypt(format!("{}", entry_file.display()), name, &entry)?;
             store.save_index()?;
 
             if store.is_repo() {

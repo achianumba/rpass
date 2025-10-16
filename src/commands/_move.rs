@@ -56,8 +56,8 @@ impl Move {
                 path_string,
                 [
                     "mv",
-                    from.display().to_string().as_str(),
-                    to.display().to_string().as_str(),
+                    format!("{}", from.display()).as_str(),
+                    format!("{}", to.display()).as_str(),
                 ],
             )?;
 

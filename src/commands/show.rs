@@ -48,7 +48,7 @@ impl Show {
             ));
         }
 
-        let entry = store.decrypt(&entry_path.display().to_string(), &self.name)?;
+        let entry = store.decrypt(&format!("{}", entry_path.display()), &self.name)?;
         let single_field = self.fields.len() == 1;
         let mut output = if single_field {
             String::new()

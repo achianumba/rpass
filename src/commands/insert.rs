@@ -96,7 +96,7 @@ impl Insert {
             }
         }
 
-        store.encrypt(entry_file.display().to_string(), &self.name, &entry)?;
+        store.encrypt(format!("{}", entry_file.display()), &self.name, &entry)?;
         store.save_index()?;
 
         if store.is_repo() {

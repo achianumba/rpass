@@ -30,7 +30,7 @@ impl List {
         }
 
         if _root.is_file() {
-            let fields = store.decrypt(&_root.display().to_string(), &name)?;
+            let fields = store.decrypt(&format!("{}", _root.display()), &name)?;
             println!("\n{} contains the following fields\n", blue!("{}", &name));
 
             for (field, _) in fields {
@@ -50,7 +50,7 @@ impl List {
             println!("rPass Store")
         } else {
             let root_name = paths
-                .get(&_root.file_name().unwrap().display().to_string())
+                .get(&format!("{}", _root.file_name().unwrap().to_str().unwrap()))
                 .unwrap();
 
             println!("{}", blue!("{}", root_name));

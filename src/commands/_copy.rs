@@ -70,7 +70,7 @@ impl Copy {
         store.save_index()?;
 
         if store.is_repo() {
-            git(path_string, ["add", to.display().to_string().as_str()])?;
+            git(path_string, ["add", format!("{}", to.display()).as_str()])?;
             git(
                 path_string,
                 [
