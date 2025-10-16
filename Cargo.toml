@@ -1,6 +1,6 @@
 [package]
 name = "rpass"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Arinze Chianumba"]
 edition = "2024"
 description = "A (symmetric/asymmetric) GPG-based secrets manager for the CLI"
