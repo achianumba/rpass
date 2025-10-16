@@ -75,7 +75,7 @@ impl Store {
 
         let mut paths = self
             .encrypt(
-                self.file.display().to_string(),
+                format!("{}", self.file.display()),
                 &self.index.name,
                 &self.index.paths,
             )?
@@ -158,7 +158,7 @@ impl Store {
         })?;
 
         if output.status.success() {
-            if outfile != self.file.display().to_string() {
+            if outfile != format!("{}", self.file.display()) {
                 println!("Saved {}", blue!("{}", name));
             }
         } else {
@@ -169,7 +169,7 @@ impl Store {
             );
         }
 
-        if outfile == self.file.display().to_string() {
+        if outfile == format!("{}", self.file.display()) {
             return Ok(Some(output.stdout));
         }
 
@@ -442,9 +442,9 @@ impl Store {
             index -= 1;
 
             let id = if entry.is_file() {
-                entry.file_stem().unwrap().display().to_string()
+                format!("{}", entry.file_stem().unwrap().to_str().unwrap())
             } else {
-                entry.file_name().unwrap().display().to_string()
+                format!("{}", entry.file_name().unwrap().to_str().unwrap())
             };
 
             let name = &paths.get(&id).unwrap();
