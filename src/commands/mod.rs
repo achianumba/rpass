@@ -31,14 +31,9 @@ use list::List;
 use remove::Remove;
 use show::Show;
 
-/// A secrets manager for the CLI
+/// rpass CLI
 #[derive(Debug, Parser)]
-#[command(
-    name = "rpass",
-    author = "Arinze Chianumba",
-    version,
-    about = "\n\nA pass (UNIX Password Store) inspired secrets manager with asymmetric/symmetric encryption support"
-)]
+#[command(name = "rpass", author = "Arinze Chianumba", version, about)]
 pub struct Cli {
     #[command(subcommand)]
     command: Commands,

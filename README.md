@@ -1,4 +1,10 @@
+<!-- markdownlint-disable markdownlint-disable -->
 <!-- markdownlint-disable no-inline-html -->
+<!-- markdownlint-disable first-line-h1 -->
+<!-- markdownlint-disable no-emphasis-as-heading -->
+<!-- markdownlint-disable no-inline-html -->
+<!-- markdownlint-disable fenced-code-language -->
+<!-- markdownlint-disable no-trailing-spaces -->
 
 # rpass
 
@@ -7,7 +13,7 @@
 ![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/rpass/latest)
 ![Crates.io Size](https://img.shields.io/crates/size/rpass)
 
-`rpass` is a [`pass`](https://www.passwordstore.org/) inspired secrets manager.
+`rpass` is a [`pass`](https://www.passwordstore.org/) inspired GPG-based secrets manager with asymmetric and symmetric encryption support.
 
 > [!WARNING]
 > ⚠️ THIS PROJECT IS AN ACTIVE WORK-IN-PROGRESS.
@@ -16,26 +22,47 @@
 >
 > ⚠️ SUBSEQUENT RELEASES MAY INCLUDE BREAKING CHANGES.
 
-`rpass list` output:
+<table>
+<tr>
+<th>
 
-<pre>
+`rpass list`
+
+</th>
+
+<th>
+
+`tree ~/.rstore`
+
+</th>
+</tr>
+<tr>
+<td>
+
+```
 rPass Store
 ├── some-service
 │   └── username@some-service.com
 └── example
     └── bob@example.com
-</pre>
+```
 
-`tree` output:
+</td>
 
-<pre>
+<td>
+
+```
 .rstore
 ├── 3c11af1b-2c11-411a-bc4b-9e2aef34a928
 │   └── 26ee01a5-180d-4aee-9d03-2d83154c989b.gpg
 ├── b206d775-8adc-4e1d-9f30-88a6cd6f1a10
 │   └── 67da9fe5-81fa-4990-a022-25623b788128.gpg
 └── store.toml
-</pre>
+```
+
+</td>
+</tr>
+</table>
 
 ## Features
 
@@ -48,14 +75,11 @@ rPass Store
 - Manage multiple stores
 
 <detials>
-<summary><strong>Encryption</strong>
+<summary><strong>Mechanism</strong>
 
 It just writes and reads data to and from `gpg's` stdin and stdout through a pipe. This way, the contents of a secret aren't logged (not even by `auditd`).
 
 </details>
-
-
-<!-- markdownlint-disable first-line-h1 no-emphasis-as-heading no-inline-html-->
 
 ## Installation
 
@@ -81,14 +105,13 @@ sudo mv target/release/rpass /usr/local/bin
 cargo install rpass
 ```
 
-
-<!-- markdownlint-disable first-line-h1 no-inline-html no-emphasis-as-heading -->
-
 ## Usage
 
 > [!NOTE]
 > All operations run against the store at `$HOME/.rstore` or `%USERPROFILE%/.rstore`
-> by default. To override this behaviour, set the `DEFAULT_RPASS_STORE` environment
+> by default.
+> 
+> To override this behaviour, set the `DEFAULT_RPASS_STORE` environment
 > to a different location in your shell profile/rc files.
 
 <details>
@@ -292,12 +315,10 @@ rpass move whois@localhost local
 
 </details>
 
-
-<!-- markdownlint-disable first-line-h1 no-inline-html -->
----
+## <!-- markdownlint-disable first-line-h1 no-inline-html -->
 
 <details>
-<summary><strong>Roadmap / Planned Features</strong></summary> 
+<summary><strong>Roadmap / Planned Features</strong></summary>
 
 The following are on the roadmap but not yet implemented:
 
@@ -308,7 +329,6 @@ The following are on the roadmap but not yet implemented:
 - `serve`: Serve secrets over a REST API.
 
 </details>
-
 
 ## License
 
