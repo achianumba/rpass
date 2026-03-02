@@ -1,9 +1,8 @@
 use std::fs::{copy, create_dir_all};
 
 use clap::Args;
-use miette::{Context, IntoDiagnostic, Result, bail};
 
-use crate::{blue, red, store::Store, utils::git, yellow};
+use crate::{error::RpassError, store::Store, utils::git};
 
 /// Create a copy of a secret
 #[derive(Debug, Args)]
@@ -18,25 +17,25 @@ pub struct Copy {
 }
 
 impl Copy {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let from = store.get_path(&self.from)?;
 
         if !from.exists() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "Failed to copy secret. Entry named {} does not exist",
                 &self.from
-            ));
+            )));
         }
 
-        let mut to = store.set_entry_path(&self.to)?;
-        let msg = red!("Failed to copy {} to {}", &self.from, &self.to);
+        let mut to = store.set_entry_path(&self.to);
+        let msg = format!("Failed to copy {} to {}", &self.from, &self.to);
 
         if to.is_dir() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "Failed to copy secret to '{}. A group/folder with the same name already exists",
                 &self.to
-            ))
+            )));
         }
 
         to.set_extension("gpg");
@@ -45,8 +44,8 @@ impl Copy {
             let answer = store
                 .read_and_echo_user_input(format!(
                     "A secret named {} already exists. {}? [y/N]",
-                    blue!("{}", &self.to),
-                    yellow!("Do you wish to overwrite its contents")
+                    format!("{}", &self.to),
+                    format!("Do you wish to overwrite its contents")
                 ))?
                 .to_ascii_lowercase();
 
@@ -56,16 +55,12 @@ impl Copy {
         } else {
             if let Some(d) = to.parent() {
                 if !d.exists() {
-                    create_dir_all(d)
-                        .into_diagnostic()
-                        .wrap_err(msg.to_owned())?;
+                    create_dir_all(d).map_err(|e| RpassError::Message(msg.to_owned()))?;
                 }
             }
         }
 
-        copy(&from, &to)
-            .into_diagnostic()
-            .wrap_err(msg.to_owned())?;
+        copy(&from, &to).map_err(|e| RpassError::Message(msg.to_owned()))?;
 
         store.save_index()?;
 
@@ -83,8 +78,8 @@ impl Copy {
 
         println!(
             "Copied {} to {}",
-            blue!("{}", &self.from),
-            blue!("{}", &self.to)
+            format!("{}", &self.from),
+            format!("{}", &self.to)
         );
 
         Ok(())

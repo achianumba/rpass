@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 
 use clap::{ArgAction::Set, ArgGroup, Args};
-use miette::{Result, bail};
 use rand::{
     rngs::ThreadRng,
     seq::{IndexedRandom, IteratorRandom},
 };
 
-use crate::{red, store::Store, utils::git, yellow};
+use crate::{error::RpassError, store::Store, utils::git};
 
 const SPECIAL_CHARACTERS: &str = r#"'!'#$%&'()*+-./{|}~':;<=>?@[\]^_`"#;
 const NUMERIC_CHARACTERS: &str = "0123456789";
@@ -7826,7 +7825,7 @@ pub struct Generate {
 }
 
 impl Generate {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut _password: String = String::new();
         let mut rng = rand::rng();
 
@@ -7840,22 +7839,22 @@ impl Generate {
 
         if let Some(name) = &self.name {
             let mut store = Store::load(path_string)?;
-            let mut entry_file = store.set_entry_path(name)?;
+            let mut entry_file = store.set_entry_path(name);
 
             if entry_file.is_dir() {
-                bail!(red!(
+                return Err(RpassError::Message(format!(
                     "Failed to save entry. '{}' is a folder containing at least one other secret.",
                     &name
-                ));
+                )));
             }
 
             entry_file.set_extension("gpg");
 
             if entry_file.exists() {
-                bail!(red!(
+                return Err(RpassError::Message(format!(
                     "The store already contains a secret named '{}'",
                     &name
-                ));
+                )));
             }
 
             let mut entry: HashMap<String, String> = HashMap::new();
@@ -7879,7 +7878,7 @@ impl Generate {
         Ok(())
     }
 
-    pub fn generate_passphrase(&self, rng: &mut ThreadRng) -> Result<String> {
+    pub fn generate_passphrase(&self, rng: &mut ThreadRng) -> Result<String, RpassError> {
         let mut length = self.length.unwrap_or(6);
         let mut passphrase = String::new();
 
@@ -7890,7 +7889,9 @@ impl Generate {
                     passphrase.push_str(word);
                 }
                 None => {
-                    bail!(red!("Failed to select random word for passphrase"));
+                    return Err(RpassError::Message(format!(
+                        "Failed to select random word for passphrase"
+                    )));
                 }
             };
 
@@ -7902,14 +7903,14 @@ impl Generate {
         if self.name.is_none() {
             println!(
                 "The generated passphrase is: {}",
-                yellow!("{}", &passphrase)
+                format!("{}", &passphrase)
             );
         }
 
         Ok(passphrase)
     }
 
-    pub fn generate_password(&self, rng: &mut ThreadRng) -> Result<String> {
+    pub fn generate_password(&self, rng: &mut ThreadRng) -> Result<String, RpassError> {
         let mut length = self.length.unwrap_or(32);
         let mut characters = String::new();
 
@@ -7934,7 +7935,9 @@ impl Generate {
                     password.push(c);
                 }
                 None => {
-                    bail!(red!("Failed to select random character for password"));
+                    return Err(RpassError::Message(format!(
+                        "Failed to select random character for password"
+                    )));
                 }
             };
 
@@ -7942,7 +7945,7 @@ impl Generate {
         }
 
         if self.name.is_none() {
-            println!("The generated password is: {}", yellow!("{}", &password));
+            println!("The generated password is: {}", format!("{}", &password));
         }
 
         Ok(password)

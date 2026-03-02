@@ -1,7 +1,6 @@
 use clap::Args;
-use miette::Result;
 
-use crate::utils::git;
+use crate::{error::RpassError, utils::git};
 
 /// Execute git commands against the store
 #[derive(Debug, Args)]
@@ -11,7 +10,7 @@ pub struct Git {
 }
 
 impl Git {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         git(path_string, self.args.to_owned())?;
         Ok(())
     }

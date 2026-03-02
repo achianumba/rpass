@@ -5,9 +5,8 @@ use arboard::Clipboard;
 #[cfg(target_os = "linux")]
 use arboard::SetExtLinux;
 use clap::Args;
-use miette::{Result, bail, miette};
 
-use crate::{red, store::Store};
+use crate::{error::RpassError, store::Store};
 
 /// Display secrets values and optionally copy them to the clipboard.
 #[derive(Debug, Args)]
@@ -36,16 +35,15 @@ pub struct Show {
 }
 
 impl Show {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let entry_path = store.get_path(&self.name)?;
 
         if !entry_path.is_file() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "'{}' is a group. The store does not contain an entry named '{}'. ",
-                &self.name,
-                &self.name
-            ));
+                &self.name, &self.name
+            )));
         }
 
         let entry = store.decrypt(&format!("{}", entry_path.display()), &self.name)?;
@@ -64,14 +62,20 @@ impl Show {
             let field = &self.fields[0];
 
             if !entry.contains_key(field) {
-                bail!(red!("'{}' doesn't contain '{}'", &self.name, field));
+                return Err(RpassError::Message(format!(
+                    "'{}' doesn't contain '{}'",
+                    &self.name, field
+                )));
             }
 
             output.push_str(entry.get(field).unwrap());
         } else {
             for field in &self.fields {
                 if !entry.contains_key(field) {
-                    bail!(red!("'{}' doesn't contain '{}'", &self.name, field));
+                    return Err(RpassError::Message(format!(
+                        "'{}' doesn't contain '{}'",
+                        &self.name, field
+                    )));
                 }
 
                 output.push_str(
@@ -97,41 +101,46 @@ impl Show {
 
             #[cfg(target_os = "linux")]
             Clipboard::new()
-                .map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to access to clipboard"),
-                        e.to_string()
-                    )
-                })?
+                .expect("Failed to access to clipboard")
+                // .map_err(|e| {e
+                //     // RpassError::Io(e)
+                //     // miette!(
+                //     //     "{}. {}",
+                //     //     format!("Failed to access to clipboard"),
+                //     //     e.to_string()
+                //     // )
+                // })
                 .set()
                 .wait_until(deadline)
                 .text(&output)
-                .map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to access the clipboard"),
-                        e.to_string()
-                    )
-                })?;
+                .expect("Failed to access the clipboard");
+            // .map_err(|e| {
+            //     miette!(
+            //         "{}. {}",
+            //         format!("Failed to access the clipboard"),
+            //         e.to_string()
+            //     )
+            // })?;
 
             #[cfg(not(target_os = "linux"))]
             Clipboard::new()
-                .map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to copy entry fields(s) to the clipboard"),
-                        e.to_string()
-                    )
-                })?
+                .expect("Failed to copy entry fields(s) to the clipboard")
+                // .map_err(|e| {
+                //     miette!(
+                //         "{}. {}",
+                //         format!("Failed to copy entry fields(s) to the clipboard"),
+                //         e.to_string()
+                //     )
+                // })?
                 .set_text(&output)
-                .map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to copy entry fields(s) to the clipboard"),
-                        e.to_string()
-                    )
-                })?;
+                .expect("Failed to copy entry fields(s) to the clipboard");
+            // .map_err(|e| {
+            //     miette!(
+            //         "{}. {}",
+            //         format!("Failed to copy entry fields(s) to the clipboard"),
+            //         e.to_string()
+            //     )
+            // })?;
         } else {
             println!("{output}");
         }

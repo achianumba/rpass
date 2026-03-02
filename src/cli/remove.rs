@@ -1,9 +1,8 @@
 use std::fs::{remove_dir_all, remove_file};
 
 use clap::Args;
-use miette::{Result, miette};
 
-use crate::{blue, red, store::Store, utils::git, yellow};
+use crate::{error::RpassError, store::Store, utils::git};
 
 /// Delete a secret from the store
 #[derive(Debug, Args)]
@@ -15,7 +14,7 @@ pub struct Remove {
 }
 
 impl Remove {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let entry_file = store.get_path(&self.name)?;
 
@@ -23,8 +22,8 @@ impl Remove {
             let answer = store
                 .read_and_echo_user_input(format!(
                     "{} is a {}. Do you want to remove it anyway? [y/N]",
-                    blue!("{}", &self.name),
-                    yellow!("directoy containing multiple secrets")
+                    format!("{}", &self.name),
+                    format!("directoy containing multiple secrets")
                 ))?
                 .to_ascii_lowercase();
 
@@ -41,11 +40,12 @@ impl Remove {
                 git(path_string, ["commit", "-m", "'remove group'"])?;
             } else {
                 remove_dir_all(&entry_file).map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to remove entry group named {}", &self.name),
-                        e.to_string()
-                    )
+                    RpassError::Io(e)
+                    // miette!(
+                    //     "{}. {}",
+                    //     format!("Failed to remove entry group named {}", &self.name),
+                    //     e.to_string()
+                    // )
                 })?;
             }
         }
@@ -54,8 +54,8 @@ impl Remove {
             let answer = store
                 .read_and_echo_user_input(format!(
                     "{} {}? [y/N]",
-                    yellow!("Are you sure you want to delete"),
-                    blue!("{}", &self.name)
+                    format!("Are you sure you want to delete"),
+                    format!("{}", &self.name)
                 ))?
                 .to_ascii_lowercase();
 
@@ -72,16 +72,17 @@ impl Remove {
                 git(path_string, ["commit", "-m", "'remove entry'"])?;
             } else {
                 remove_file(entry_file).map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to remove entry named {}", &self.name),
-                        e.to_string()
-                    )
+                    RpassError::Io(e)
+                    // miette!(
+                    //     "{}. {}",
+                    //     format!("Failed to remove entry named {}", &self.name),
+                    //     e.to_string()
+                    // )
                 })?;
             }
         }
 
-        println!("Removed {}", blue!("{}", &self.name));
+        println!("Removed {}", format!("{}", &self.name));
 
         Ok(())
     }

@@ -1,8 +1,7 @@
 use clap::Parser;
-use miette::Result;
 
-/// Invokes the CLI.
-fn main() -> Result<()> {
+/// Invokes rpass command line interface.
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     rpass::cli::Cli::parse().run()?;
     Ok(())
 }

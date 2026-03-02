@@ -1,8 +1,7 @@
+use crate::error::RpassError;
 use crate::store::Store;
 use crate::utils::git;
-use crate::{blue, green};
 use clap::Args;
-use miette::Result;
 use std::path::PathBuf;
 
 /// Initialize a new password store
@@ -21,7 +20,7 @@ pub struct Init {
 
 impl Init {
     /// Create a new folder at `path_string` and saves `store.toml` to the created folder.
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let store = Store::init(self.key.to_owned(), PathBuf::from(path_string))?;
 
         store.save_index()?;
@@ -34,8 +33,8 @@ impl Init {
 
         println!(
             "\n{} initialized a new store at {}\n",
-            green!("rpass"),
-            blue!("{}", path_string)
+            format!("rpass"),
+            format!("{}", path_string)
         );
 
         Ok(())

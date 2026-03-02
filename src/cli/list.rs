@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 use clap::Args;
-use miette::Result;
 
+use crate::error::RpassError;
 use crate::store::Store;
-use crate::{blue, purple};
 
 /// List secrets saved in a path or list the fields saved in an entry.
 #[derive(Debug, Args)]
@@ -17,7 +16,7 @@ pub struct List {
 }
 
 impl List {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let mut name = String::new();
         let mut _root = PathBuf::new();
@@ -31,10 +30,10 @@ impl List {
 
         if _root.is_file() {
             let fields = store.decrypt(&format!("{}", _root.display()), &name)?;
-            println!("\n{} contains the following fields\n", blue!("{}", &name));
+            println!("\n{} contains the following fields\n", format!("{}", &name));
 
             for (field, _) in fields {
-                println!("- {}", purple!("{}", field));
+                println!("- {}", field);
             }
 
             return Ok(());
@@ -53,7 +52,7 @@ impl List {
                 .get(&format!("{}", _root.file_name().unwrap().to_str().unwrap()))
                 .unwrap();
 
-            println!("{}", blue!("{}", root_name));
+            println!("{}", format!("{}", root_name));
         }
 
         store.print_tree(&mut _root, &paths, &"".to_string())?;

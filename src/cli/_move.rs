@@ -1,9 +1,8 @@
 use std::fs::{create_dir_all, rename};
 
 use clap::Args;
-use miette::{Result, bail, miette};
 
-use crate::{blue, red, store::Store, utils::git, yellow};
+use crate::{error::RpassError, store::Store, utils::git};
 
 /// Move or rename of a secret or group of secrets
 #[derive(Debug, Args)]
@@ -18,25 +17,25 @@ pub struct Move {
 }
 
 impl Move {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let from = store.get_path(&self.from)?;
 
         if !from.exists() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "Failed to move secret/group. Entry named {} does not exist",
                 &self.from
-            ));
+            )));
         }
 
-        let mut to = store.set_entry_path(&self.to)?;
+        let mut to = store.set_entry_path(&self.to);
 
         if to.exists() {
             let answer = store
                 .read_and_echo_user_input(format!(
                     "A secret or group named {} already exists. {}? [y/N]",
-                    blue!("{}", &self.to),
-                    yellow!("Do you wish to overwrite its contents")
+                    format!("{}", &self.to),
+                    format!("Do you wish to overwrite its contents")
                 ))?
                 .to_ascii_lowercase();
 
@@ -66,28 +65,28 @@ impl Move {
             if let Some(d) = to.parent() {
                 if !d.exists() {
                     create_dir_all(d).map_err(|e| {
-                        miette!(
+                        RpassError::Message(format!(
                             "{}. {}",
-                            red!("Failed to move {} to {}", &self.from, &self.to),
+                            format!("Failed to move {} to {}", &self.from, &self.to),
                             e.to_string()
-                        )
+                        ))
                     })?;
                 }
             }
 
             rename(from, to).map_err(|e| {
-                miette!(
+                RpassError::Message(format!(
                     "{}. {}",
-                    red!("Failed to move {} to {}", &self.from, &self.to),
+                    format!("Failed to move {} to {}", &self.from, &self.to),
                     e.to_string()
-                )
+                ))
             })?;
         }
 
         println!(
             "Moved {} to {}",
-            blue!("{}", &self.from),
-            blue!("{}", &self.to)
+            format!("{}", &self.from),
+            format!("{}", &self.to)
         );
 
         Ok(())

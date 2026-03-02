@@ -1,7 +1,6 @@
 use clap::Args;
-use miette::{Result, bail};
 
-use crate::{blue, purple, red, store::Store, utils::git};
+use crate::{error::RpassError, store::Store, utils::git};
 
 /// Modify field names and values or
 /// add fields to a secret
@@ -30,15 +29,15 @@ pub struct Edit {
 }
 
 impl Edit {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let entry_file = store.get_path(&self.name)?;
 
         if entry_file.is_dir() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "Failed to edit entry. '{}' is a folder containing at least one other secret.",
                 &self.name
-            ));
+            )));
         }
 
         let mut entry = store.decrypt(&format!("{}", entry_file.display()), &self.name)?;
@@ -62,11 +61,11 @@ impl Edit {
                     entry.insert(new_field, value.to_owned());
                 }
                 None => {
-                    bail!(
+                    return Err(RpassError::Message(format!(
                         "'{}' doesn't contain a field named '{}'",
-                        blue!("{}", &self.name),
-                        purple!("{}", field)
-                    );
+                        format!("{}", &self.name),
+                        format!("{}", field)
+                    )));
                 }
             };
         }
@@ -84,11 +83,11 @@ impl Edit {
                     entry.insert(field.to_owned(), new_value);
                 }
                 None => {
-                    bail!(
+                    return Err(RpassError::Message(format!(
                         "'{}' doesn't contain a field named '{}'",
-                        blue!("{}", &self.name),
-                        purple!("{}", field)
-                    );
+                        format!("{}", &self.name),
+                        field
+                    )));
                 }
             };
         }

@@ -1,5 +1,4 @@
 //! Secrets store.
-use miette::{Result, bail, miette};
 use std::collections::HashMap;
 use std::fs::{create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
@@ -8,7 +7,7 @@ use std::process::{Command, Stdio};
 use toml::{from_str, to_string};
 use uuid::Uuid;
 
-use crate::{blue, purple, red};
+use crate::error::RpassError;
 
 /// Secrets store.
 #[derive(Debug)]
@@ -37,16 +36,21 @@ pub struct StoreIndex {
 
 impl Store {
     /// Create a secrets store.
-    pub fn init(key: Option<String>, path: PathBuf) -> Result<Self> {
+    pub fn init(key: Option<String>, path: PathBuf) -> Result<Self, RpassError> {
         if path.exists() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "Aborting password store initialization. '{}' already exists.",
                 &path.display()
-            ));
+            )));
         } else {
-            let msg = red!("Failed to create password store at '{}'", &path.display());
+            let msg = format!("Failed to create password store at '{}'", &path.display());
 
-            create_dir_all(&path).map_err(|e| miette!("{}. {}", msg, e.to_string()))?;
+            create_dir_all(&path).map_err(|e| {
+                RpassError::Message(format!(
+                    "Aborting password store initialization. '{}' already exists.",
+                    &path.display()
+                ))
+            })?;
         };
 
         Ok(Self {
@@ -61,7 +65,7 @@ impl Store {
     }
 
     /// Save a store's `store.toml` file.
-    pub fn save_index(&self) -> Result<()> {
+    pub fn save_index(&self) -> Result<(), RpassError> {
         let mut index_bytes: Vec<u8> = Vec::new();
 
         if let Some(key) = &self.index.key {
@@ -85,11 +89,12 @@ impl Store {
         index_bytes.append(&mut vec![39, 39, 39]); // '''
 
         write(&self.file, index_bytes).map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!("Failed to save store index in {}", self.file.display()),
-                e.to_string()
-            )
+            RpassError::Io(e)
+            // Err(RpassError::Message(format!(
+            //     "{}. {}",
+            //     format!("Failed to save store index in {}", self.file.display()),
+            //     e.to_string()
+            // )))
         })?;
         Ok(())
     }
@@ -100,12 +105,15 @@ impl Store {
         outfile: String,
         name: &String,
         entry: &HashMap<String, String>,
-    ) -> Result<Option<Vec<u8>>> {
+    ) -> Result<Option<Vec<u8>>, RpassError> {
         // Using match to hide potential secret info from output
         let mut _plaintext = match to_string(entry) {
             std::result::Result::Ok(t) => t,
             Err(_) => {
-                bail!(red!("Failed to serialize entry for '{}'", name));
+                return Err(RpassError::Message(format!(
+                    "Failed to serialize entry for '{}'",
+                    name
+                )));
             }
         };
 
@@ -132,41 +140,44 @@ impl Store {
             .stdout(Stdio::piped())
             .spawn()
             .map_err(|e| {
-                miette!(
-                    "{}. {}",
-                    red!("Failed to spawn a child process for 'git' shell command"),
-                    e.to_string()
-                )
+                RpassError::Io(e)
+                // Err(RpassError::Message(format!(
+                //     "{}. {}",
+                //     format!("Failed to spawn a child process for 'git' shell command"),
+                //     e.to_string()
+                // )))
             })?;
 
         if let Some(mut stdin) = child_process.stdin.take() {
             stdin.write_all(_plaintext.as_bytes()).map_err(|e| {
-                miette!(
-                    "{}. {}",
-                    red!("Failed encrypt secrets {}", name),
-                    e.to_string()
-                )
+                RpassError::Io(e)
+                // miette!(
+                //     "{}. {}",
+                //     format!("Failed encrypt secrets {}", name),
+                //     e.to_string()
+                // )
             })?;
         }
 
         let output = child_process.wait_with_output().map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!("Failed encrypt entry {}", name),
-                e.to_string()
-            )
+            RpassError::Io(e)
+            // miette!(
+            //     "{}. {}",
+            //     format!("Failed encrypt entry {}", name),
+            //     e.to_string()
+            // )
         })?;
 
         if output.status.success() {
             if outfile != format!("{}", self.file.display()) {
-                println!("Saved {}", blue!("{}", name));
+                println!("Saved {}", format!("{}", name));
             }
         } else {
-            bail!(
+            return Err(RpassError::Message(format!(
                 "{}\n{}",
-                red!("Failed encrypt {}", name),
-                String::from_utf8(output.stderr).map_err(|e| miette!("{}", e.to_string()))?
-            );
+                format!("Failed encrypt {}", name),
+                String::from_utf8(output.stderr).map_err(|e| RpassError::Message(e.to_string()))?
+            )));
         }
 
         if outfile == format!("{}", self.file.display()) {
@@ -177,7 +188,7 @@ impl Store {
     }
 
     /// Load the index of an existing store
-    pub fn load(path_string: &String) -> Result<Self> {
+    pub fn load(path_string: &String) -> Result<Self, RpassError> {
         let mut store = Self {
             index: StoreIndex {
                 key: None,
@@ -200,7 +211,11 @@ impl Store {
         Ok(store)
     }
 
-    pub fn decrypt(&mut self, file: &String, name: &String) -> Result<HashMap<String, String>> {
+    pub fn decrypt(
+        &mut self,
+        file: &String,
+        name: &String,
+    ) -> Result<HashMap<String, String>, RpassError> {
         let mut args = vec!["-d", "-q", "--batch", "--yes"];
 
         if name != &self.index.name {
@@ -212,13 +227,13 @@ impl Store {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .spawn()
-            .map_err(|e| {
-                miette!(
-                    "{}. {}",
-                    red!("Failed to run 'gpg' command."),
-                    e.to_string()
-                )
-            })?;
+            .map_err(|e| RpassError::Io(e))?;
+
+        //  format!(
+        //             "{}. {}",
+        //             format!("Failed to run 'gpg' command."),
+        //             e.to_string()
+        //         )
 
         if let Some(mut stdin) = child_process.stdin.take() {
             if name == &self.index.name {
@@ -227,63 +242,72 @@ impl Store {
                 self.index.key = key;
 
                 stdin.write_all(&mut index_cipher).map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!("Failed to pipe store index to gpg"),
-                        e.to_string()
-                    )
+                    RpassError::Io(e)
+                    // !(
+                    //     "{}. {}",
+                    //     format!("Failed to pipe store index to gpg"),
+                    //     e.to_string()
+                    // )
                 })?;
             }
         }
 
-        let output = child_process.wait_with_output().map_err(|e| {
-            let msg = if name == &self.index.name {
-                red!("Failed to decrypt store index ad {}", &self.file.display())
+        let output = child_process.wait_with_output().expect(
+            if name == &self.index.name {
+                format!("Failed to decrypt store index ad {}", &self.file.display())
             } else {
-                red!("Failed to decrypt entry for {}", name)
-            };
+                format!("Failed to decrypt entry for {}", name)
+            }
+            .as_str(),
+        );
+        // .map_err(|e| {
+        // let msg = ;
 
-            miette!("{}. {}", msg, e.to_string())
-        })?;
+        //     Err(RpassError::Io(e))
+        // })?;
 
         let mut _map: HashMap<String, String> = HashMap::new();
 
         if output.status.success() {
             let plaintext = String::from_utf8(output.stdout).map_err(|e| {
-                miette!(
+                RpassError::Message(format!(
                     "{}. {}",
-                    red!(
+                    format!(
                         "Failed to serialize decrypted secret {}",
                         self.file.display()
                     ),
                     e.to_string()
-                )
+                ))
             })?;
 
             _map = match from_str(&plaintext) {
                 std::result::Result::Ok(m) => m,
                 Err(_) => {
-                    bail!(red!("Failed to deserialize store index at '{}'", name));
+                    return Err(RpassError::Message(format!(
+                        "Failed to deserialize store index at '{}'",
+                        name
+                    )));
                 }
             };
         } else {
-            bail!(
+            return Err(RpassError::Message(format!(
                 "{}\n{}",
-                red!("Failed to decrypt to decrypt entry for {}", name),
-                String::from_utf8(output.stderr).map_err(|e| miette!("{}", e.to_string()))?
-            );
+                format!("Failed to decrypt to decrypt entry for {}", name),
+                String::from_utf8(output.stderr).map_err(|e| RpassError::Message(e.to_string()))?
+            )));
         }
 
         Ok(_map)
     }
 
-    fn read_index(path_string: &String) -> Result<(Vec<u8>, Option<String>)> {
+    fn read_index(path_string: &String) -> Result<(Vec<u8>, Option<String>), RpassError> {
         let file_contents = read_to_string(path_string).map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!("Failed to read store index at '{path_string}'."),
-                e.to_string()
-            )
+            RpassError::Io(e)
+            // return Err(RpassError::Message(format!(
+            //     "{}. {}",
+            //     format!("Failed to read store index at '{path_string}'."),
+            //     e.to_string()
+            // )));
         })?;
 
         let mut _paths_cipher: Vec<u8> = Vec::new();
@@ -293,14 +317,14 @@ impl Store {
             _paths_cipher = file_contents.as_bytes().to_vec();
         } else {
             let saved_index: HashMap<String, String> = from_str(&file_contents).map_err(|e| {
-                miette!(
+                RpassError::Message(format!(
                     "{}. {}",
-                    red!(
+                    format!(
                         "Failed to deserialize saved store index in '{}'",
                         path_string
                     ),
                     e.to_string()
-                )
+                ))
             })?;
 
             match saved_index.get("key") {
@@ -308,10 +332,10 @@ impl Store {
                     key = Some(k.to_owned());
                 }
                 None => {
-                    bail!(red!(
+                    return Err(RpassError::Message(format!(
                         "'key' field missing from the store index at '{}'",
                         path_string
-                    ));
+                    )));
                 }
             }
 
@@ -320,10 +344,10 @@ impl Store {
                     _paths_cipher = p.as_bytes().to_vec();
                 }
                 None => {
-                    bail!(red!(
+                    return Err(RpassError::Message(format!(
                         "'paths' field is missing from the store index at '{}'",
                         path_string
-                    ));
+                    )));
                 }
             }
         };
@@ -332,46 +356,40 @@ impl Store {
     }
 
     /// Read input from standard input
-    pub fn read_user_input(&mut self, prompt: String, echo: &bool) -> Result<String> {
-        let prompt = purple!("{}: ", prompt);
+    pub fn read_user_input(&mut self, prompt: String, echo: &bool) -> Result<String, RpassError> {
+        let prompt = format!("{prompt}: ");
 
         if *echo {
             return self.read_and_echo_user_input(prompt);
         }
 
-        Ok(self.read_secret_user_input(prompt).map_err(|e| {
-            miette!(
-                "{}. {}",
-                red!("Failed to read secret user input"),
-                e.to_string()
-            )
-        })?)
+        Ok(self.read_secret_user_input(prompt)?)
     }
 
     /// Read input from standard input and echo each keypress as it's entered.
-    pub fn read_and_echo_user_input(&mut self, prompt: String) -> Result<String> {
+    pub fn read_and_echo_user_input(&mut self, prompt: String) -> Result<String, RpassError> {
         let mut input = String::new();
 
         print!("{}", prompt);
         // Makes sure the above prompt is shown first.
         io::stdout()
             .flush()
-            .map_err(|e| miette!("{}. {}", red!("Failed to flush stdout"), e.to_string()))?;
+            .expect(format!("{}", format!("Failed to flush stdout")).as_str());
 
         io::stdin()
             .read_line(&mut input)
-            .map_err(|e| miette!("{}. {}", red!("Failed to read user input"), e.to_string()))?;
+            .expect(format!(" {}", format!("Failed to read user input")).as_str());
 
         Ok(input.trim().to_string())
     }
 
     /// Read user input without echoing keypresses.
-    fn read_secret_user_input(&self, prompt: String) -> Result<String, std::io::Error> {
-        rpassword::prompt_password(prompt)
+    fn read_secret_user_input(&self, prompt: String) -> Result<String, RpassError> {
+        rpassword::prompt_password(prompt).map_err(|e| RpassError::Io(e))
     }
 
     /// Builds and returns an entry's ID from the entry's path
-    pub fn set_entry_path(&mut self, name: &String) -> Result<PathBuf> {
+    pub fn set_entry_path(&mut self, name: &String) -> PathBuf {
         let entry_paths = name.split('/').collect::<Vec<&str>>();
         let mut file = self.path.to_owned();
         let mut store_paths = self.index.paths.to_owned();
@@ -389,18 +407,21 @@ impl Store {
 
         self.index.paths = store_paths;
 
-        Ok(file)
+        file
     }
 
     /// Construct an entry's actual path from the virtual name
-    pub fn get_path(&self, name: &String) -> Result<PathBuf> {
+    pub fn get_path(&self, name: &String) -> Result<PathBuf, RpassError> {
         let paths = name.split('/').collect::<Vec<&str>>();
         let mut path = self.path.to_owned();
 
         for pathname in paths {
             match self.index.paths.get(pathname) {
                 None => {
-                    bail!(red!("The store does not contain an entry named '{}'", name));
+                    return Err(RpassError::Message(format!(
+                        "The store does not contain an entry named '{}'",
+                        name
+                    )));
                 }
                 Some(p) => {
                     path.push(p);
@@ -420,17 +441,18 @@ impl Store {
         directory: &mut PathBuf,
         paths: &HashMap<String, String>,
         prefix: &String,
-    ) -> Result<()> {
+    ) -> Result<(), RpassError> {
         let mut entries: Vec<PathBuf> = read_dir(&directory)
             .map_err(|e| {
-                miette!(
-                    "{}. {}",
-                    red!(
-                        "Failed to read actual actual path at '{}'",
-                        directory.display()
-                    ),
-                    e.to_string()
-                )
+                RpassError::Io(e)
+                // miette!(
+                //     "{}. {}",
+                //     format!(
+                //         "Failed to read actual actual path at '{}'",
+                //         directory.display()
+                //     ),
+                //     e.to_string()
+                // )
             })?
             .map(|entry| entry.unwrap().path())
             .filter(|entry| !entry.ends_with("store.toml") && !entry.ends_with(".git"))
@@ -451,7 +473,7 @@ impl Store {
 
             if index == 0 {
                 if entry.is_dir() {
-                    println!("{}└── {}", prefix, blue!("{}", name));
+                    println!("{}└── {}", prefix, format!("{}", name));
 
                     self.print_tree(
                         &mut directory.join(&entry),
@@ -465,7 +487,7 @@ impl Store {
 
             if index != 0 {
                 if entry.is_dir() {
-                    println!("{}├── {}", prefix, blue!("{}", name));
+                    println!("{}├── {}", prefix, format!("{}", name));
 
                     self.print_tree(
                         &mut directory.join(&entry),

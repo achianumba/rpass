@@ -1,9 +1,8 @@
 use std::{collections::HashMap, fs::create_dir_all};
 
 use clap::Args;
-use miette::{Result, bail, miette};
 
-use crate::{green, purple, red, store::Store, utils::git, yellow};
+use crate::{error::RpassError, store::Store, utils::git};
 
 /// Add a new secret to the store
 #[derive(Debug, Args)]
@@ -23,24 +22,24 @@ pub struct Insert {
 }
 
 impl Insert {
-    pub fn run(&self, path_string: &String) -> Result<()> {
+    pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
-        let mut entry_file = store.set_entry_path(&self.name)?;
+        let mut entry_file = store.set_entry_path(&self.name);
 
         if entry_file.is_dir() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "Failed to save entry. '{}' is a folder containing at least one other secret.",
                 &self.name
-            ));
+            )));
         }
 
         entry_file.set_extension("gpg");
 
         if entry_file.exists() {
-            bail!(red!(
+            return Err(RpassError::Message(format!(
                 "The store already contains a secret named '{}'",
                 self.name
-            ));
+            )));
         }
 
         let mut entry: HashMap<String, String> = HashMap::new();
@@ -56,7 +55,7 @@ impl Insert {
                 store.read_user_input("Confirm password".to_string(), &self.echo)?;
 
             if password != password_confirmation {
-                bail!(red!("Passwords do not match"));
+                return Err(RpassError::Message(format!("Passwords do not match")));
             }
 
             entry.insert("password".to_string(), password);
@@ -64,8 +63,8 @@ impl Insert {
             loop {
                 println!(
                     "Enter {} as the {} when you're done setting custom fields.",
-                    yellow!("DONE!"),
-                    yellow!("field name")
+                    format!("DONE!"),
+                    format!("field name")
                 );
 
                 let field = store.read_user_input("Field name".to_string(), &true)?;
@@ -76,7 +75,7 @@ impl Insert {
 
                 entry.insert(
                     field.to_owned(),
-                    store.read_user_input(purple!("{} value", field), &self.echo)?,
+                    store.read_user_input(format!("{} value", field), &self.echo)?,
                 );
             }
         }
@@ -84,14 +83,15 @@ impl Insert {
         if let Some(parent_dir) = entry_file.parent() {
             if !parent_dir.exists() {
                 create_dir_all(&parent_dir).map_err(|e| {
-                    miette!(
-                        "{}. {}",
-                        red!(
-                            "Failed to create a parent directory for {}",
-                            parent_dir.display()
-                        ),
-                        e.to_string()
-                    )
+                    RpassError::Io(e)
+                    // format!(
+                    //     "{}. {}",
+                    //     format!(
+                    //         "Failed to create a parent directory for {}",
+                    //         parent_dir.display()
+                    //     ),
+                    //     e.to_string()
+                    // )
                 })?;
             }
         }
@@ -106,7 +106,7 @@ impl Insert {
 
         println!(
             "Inserted '{}' into the secrets store.",
-            green!("{}", self.name)
+            format!("{}", self.name)
         );
 
         Ok(())
