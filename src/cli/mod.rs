@@ -1,4 +1,5 @@
-//! CLI commands.
+//! [`clap`](https://docs.rs/clap/latest/clap/) based Rpass command line interface.
+
 use clap::Parser;
 use clap::Subcommand;
 #[cfg(not(debug_assertions))]

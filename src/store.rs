@@ -1,4 +1,5 @@
-//! Secrets store.
+//! `rpass` secrets store.
+
 use std::collections::HashMap;
 use std::fs::{create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};

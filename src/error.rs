@@ -1,3 +1,5 @@
+//! [`thiserror`](https://docs.rs/thiserror/latest/thiserror) based Rpass custom errors.
+
 use std::io;
 
 use thiserror::Error;

@@ -1,3 +1,5 @@
+//! Functions reused across `rpass` crate.
+
 use std::env::set_current_dir;
 use std::ffi::OsStr;
 use std::path::PathBuf;
