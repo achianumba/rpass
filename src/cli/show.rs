@@ -4,9 +4,13 @@ use std::time::{Duration, Instant};
 use arboard::Clipboard;
 #[cfg(target_os = "linux")]
 use arboard::SetExtLinux;
-use clap::Args;
+use clap::{Args, Parser};
 
-use crate::{error::RpassError, store::Store};
+use crate::{
+    cli::{RpassCli, RpassCliCommand},
+    error::RpassError,
+    store::Store,
+};
 
 /// Display secrets values and optionally copy them to the clipboard.
 #[derive(Debug, Args)]
@@ -35,6 +39,33 @@ pub struct Show {
 }
 
 impl Show {
+    /// Creates a [`Show`] from the [`super::RpassCli::args`] [`super::RpassCli::store`]
+    /// argument and options passed directly to [`super::RpassCli`]
+    /// (witout a subcommand) during invocation.
+    pub fn from_args(args: &Vec<String>, store: &String) -> Result<Self, RpassError> {
+        let mut args_owned = vec!["rpass", "show", "--store"];
+        args_owned.push(store.as_str());
+
+        for i in args {
+            args_owned.push(i);
+        }
+
+        let cli = RpassCli::try_parse_from(args).map_err(|e| RpassError::RpassCliCommandError {
+            cmd: "list".to_string(),
+            source: e,
+        })?;
+
+        match cli.command {
+            Some(RpassCliCommand::Show(show)) => Ok(show),
+            _ => Err(clap::Error::new(clap::error::ErrorKind::DisplayHelp)).map_err(|e| {
+                RpassError::RpassCliCommandError {
+                    cmd: "show".to_string(),
+                    source: e,
+                }
+            })?,
+        }
+    }
+
     pub fn run(&self, path_string: &String) -> Result<(), RpassError> {
         let mut store = Store::load(path_string)?;
         let entry_path = store.get_path(&self.name)?;

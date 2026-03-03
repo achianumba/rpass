@@ -1,4 +1,4 @@
-//! [`thiserror`](https://docs.rs/thiserror/latest/thiserror) based Rpass custom errors.
+//! [`thiserror`] based Rpass custom errors.
 
 use std::io;
 
@@ -9,5 +9,11 @@ pub enum RpassError {
     #[error("Error: {0}")]
     Message(String),
     #[error("I/O Error")]
-    Io(#[from] io::Error)
+    Io(#[from] io::Error),
+    #[error("rpass failed to run {cmd} command.\n{source}")]
+    RpassCliCommandError {
+        cmd: String,
+        #[source]
+        source: clap::Error,
+    },
 }

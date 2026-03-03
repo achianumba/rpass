@@ -1,14 +1,91 @@
 //! `rpass` secrets store.
 
 use std::collections::HashMap;
+#[cfg(debug_assertions)]
+use std::env::{self, current_dir};
 use std::fs::{create_dir_all, read_dir, read_to_string, write};
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{self, PathBuf};
 use std::process::{Command, Stdio};
 use toml::{from_str, to_string};
 use uuid::Uuid;
 
+use crate::cli::list::List;
+use crate::cli::show::Show;
+use crate::cli::{RpassCli, RpassCliCommand};
 use crate::error::RpassError;
+
+#[derive(Debug)]
+pub struct RpassStore {}
+
+impl RpassStore {
+    /// Returns the default value of [`RpassStore::store`] as a [`String`]
+    pub fn default_store_string() -> String {
+        format!(
+            "{}",
+            RpassStore::default_store()
+                .expect("Failed to determine the user's default store.")
+                .display()
+        )
+    }
+
+    /// Returns the default value of [`RpassStore::store`]
+    pub fn default_store() -> Result<PathBuf, RpassStore> {
+        #[cfg(not(debug_assertions))]
+        let default_store = std::env::home_dir()
+            .expect(
+                r#"Unable to access the user's home folder.
+            
+            Suggestions:
+            - Pass a specific store path to the --store global option
+            - Set the 'RPASS_STORE' or the 'DEFAULT_PASSWORD_STORE' environment variable."#,
+            )
+            .join(".rstore")
+            .display()
+            .to_string();
+
+        #[cfg(debug_assertions)]
+        let prefix =
+            env::var("CARGO_MANIFEST_DIR").expect("Failed to access the current project's folder.");
+        #[cfg(debug_assertions)]
+        let default_store = PathBuf::from(prefix).join(PathBuf::from("target").join("debug"));
+
+        Ok(default_store)
+    }
+
+    /// Creates [`RpassStore`] instance from [`crate::cli::RpassCli`]
+    pub fn from_cli(cli_args: RpassCli) -> Result<(), RpassError> {
+        match &cli_args.command {
+            // Run explicitly invoked crate::cli::RpassCliCommand
+            Some(cmd) => match cmd {
+                RpassCliCommand::Init(init) => init.run(&cli_args.store)?,
+                RpassCliCommand::Insert(insert) => insert.run(&cli_args.store)?,
+                RpassCliCommand::List(list) => list.run(&cli_args.store)?,
+                RpassCliCommand::Show(show) => show.run(&cli_args.store)?,
+                RpassCliCommand::Edit(edit) => edit.run(&cli_args.store)?,
+                RpassCliCommand::Remove(remove) => remove.run(&cli_args.store)?,
+                RpassCliCommand::Generate(generate) => generate.run(&cli_args.store)?,
+                RpassCliCommand::Git(git) => git.run(&cli_args.store)?,
+                RpassCliCommand::Copy(_copy) => _copy.run(&cli_args.store)?,
+                RpassCliCommand::Move(_move) => _move.run(&cli_args.store)?,
+            },
+            None => {
+                // Invoke
+                if cli_args.args.len() == 0 {
+                    List::from_args(&cli_args.store)?.run(&cli_args.store)?
+                } else {
+                    Show::from_args(&cli_args.args, &cli_args.store)?.run(&cli_args.store)?
+                }
+            }
+        };
+        Ok(())
+    }
+
+    /// Resolve and absolute path without touching the filesystem
+    pub fn absolute_path_from(p: &PathBuf) -> Result<PathBuf, RpassError> {
+        path::absolute(p).map_err(|e| RpassError::Io(e))
+    }
+}
 
 /// Secrets store.
 #[derive(Debug)]

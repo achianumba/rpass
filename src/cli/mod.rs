@@ -1,10 +1,6 @@
-//! [`clap`](https://docs.rs/clap/latest/clap/) based Rpass command line interface.
+//! [`clap`] based Rpass command line interface.
 
-use clap::Parser;
-use clap::Subcommand;
-#[cfg(not(debug_assertions))]
-use std::env::home_dir;
-use std::path::absolute;
+use clap::{Parser, Subcommand};
 #[cfg(debug_assertions)]
 use std::path::MAIN_SEPARATOR_STR;
 
@@ -19,7 +15,7 @@ pub mod list;
 pub mod remove;
 pub mod show;
 
-use crate::error::RpassError;
+use crate::{error::RpassError, store};
 use _copy::Copy;
 use _move::Move;
 use edit::Edit;
@@ -31,43 +27,44 @@ use list::List;
 use remove::Remove;
 use show::Show;
 
-/// rpass CLI
 #[derive(Debug, Parser)]
-#[command(name = "rpass", author = "Arinze Chianumba", version, about)]
-pub struct Cli {
+#[command(about, version)]
+#[command(name = "rpass")]
+#[command(max_term_width = 60)]
+#[command(author = "Arinze Chianumba")]
+#[command(before_long_help = include_str!("../../docs/cli-header.md"))]
+#[command(args_conflicts_with_subcommands = true)]
+pub struct RpassCli {
+    /// Available [`RpassCli`] subcommands.
     #[command(subcommand)]
-    command: Commands,
+    pub command: Option<RpassCliCommand>,
 
-    /// Path to the secrets store.
-    #[arg(global = true, default_value_t = get_default_store(), env = "DEFAULT_RPASS_STORE", last = true)]
-    store: String,
+    /// Path to the secrets store to use.
+    ///
+    /// Rpass looks for the RPASS_STORE environment variable and falls back
+    /// to PASSWORD_STORE_DIR for pass compatibility if when running non-init commands,
+    /// the default store does not exist.
+    #[arg(
+        short,
+        long,
+        visible_alias = "path",
+        global = true,
+        default_value_t = store::RpassStore::default_store_string(),
+        env = "RPASS_STORE"
+    )]
+    pub store: String,
+
+    /// Arguments and options passed directly to [`RpassCli`] when invoked without an [`RpassCliCommand`].
+    ///
+    /// Invoking [`RpassCli`] without a subcommand behaves the same as "rpass list" or "rpass show"
+    /// depending on whether 0 or more than 0 [`RpassCli::args`] are passed are passed directly to the invocation.
+    #[arg()]
+    pub args: Vec<String>,
 }
 
-pub fn get_default_store() -> String {
-    #[cfg(not(debug_assertions))]
-    let default_store = home_dir()
-        .expect(
-            r#"
-Failed to determine the current user's home directory.
-Pass a specific store path to the --store global option or set 
-the 'DEFAULT_RPASS_STORE' environment variable."#,
-        )
-        .join(".rstore")
-        .display()
-        .to_string();
-
-    #[cfg(debug_assertions)]
-    let default_store = format!(
-        "target{}debug{}.rstore",
-        MAIN_SEPARATOR_STR, MAIN_SEPARATOR_STR
-    );
-
-    default_store
-}
-
-/// `rpass` subcommands
+/// Available [`RpassCli`] subcommands
 #[derive(Debug, Subcommand)]
-pub enum Commands {
+pub enum RpassCliCommand {
     Init(Init),
     Insert(Insert),
     List(List),
@@ -80,36 +77,10 @@ pub enum Commands {
     Move(Move),
 }
 
-impl Cli {
-    pub fn run(&mut self) -> Result<(), RpassError> {
-        self.store = absolute(&self.store)
-            .map_err(|e| {
-                RpassError::Io(e)
-                // miette!(
-                //     "{}. {}",
-                //     format!(
-                //         "Failed to parse absolute path to secrets store at '{}'",
-                //         &self.store
-                //     ),
-                //     e.to_string()
-                // )
-            })?
-            .display()
-            .to_string();
-
-        match &self.command {
-            Commands::Init(init) => init.run(&self.store)?,
-            Commands::Insert(insert) => insert.run(&self.store)?,
-            Commands::List(list) => list.run(&self.store)?,
-            Commands::Show(show) => show.run(&self.store)?,
-            Commands::Edit(edit) => edit.run(&self.store)?,
-            Commands::Remove(remove) => remove.run(&self.store)?,
-            Commands::Generate(generate) => generate.run(&self.store)?,
-            Commands::Git(git) => git.run(&self.store)?,
-            Commands::Copy(_copy) => _copy.run(&self.store)?,
-            Commands::Move(_move) => _move.run(&self.store)?,
-        };
-
+impl RpassCli {
+    /// Run the invoked [`RpassCliCommand`]
+    pub fn run(self) -> Result<(), RpassError> {
+        store::RpassStore::from_cli(self)?;
         Ok(())
     }
 }
