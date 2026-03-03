@@ -21,10 +21,13 @@ categories = [ "command-line-utilities" ]
 unsafe_code = "forbid"
 
 [dependencies]
+ahash = "0.8.12"
 arboard = "3.6.1"
 clap = { version = "4.5.60", features = ["derive", "env", "wrap_help"] }
 rand = "0.10.0"
 rpassword = "7.4.0"
+secrecy = "0.10.3"
+serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.18"
 toml = "1.0.3"
 uuid = { version = "1.21.0", features = ["v4"] }
